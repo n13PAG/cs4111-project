@@ -50,13 +50,13 @@ DATABASEURI = "postgresql://"+DB_USER+":"+DB_PASSWORD+"@"+DB_SERVER+"/proj1part2
 engine = create_engine(DATABASEURI)
 
 
-# # Here we create a test table and insert some values in it
-# engine.execute("""DROP TABLE IF EXISTS test;""")
-# engine.execute("""CREATE TABLE IF NOT EXISTS test (
-#   id serial,
-#   name text
-# );""")
-# engine.execute("""INSERT INTO test(name) VALUES ('grace hopper'), ('alan turing'), ('ada lovelace');""")
+# Here we create a test table and insert some values in it
+engine.execute("""DROP TABLE IF EXISTS test;""")
+engine.execute("""CREATE TABLE IF NOT EXISTS test (
+  id serial,
+  name text
+);""")
+engine.execute("""INSERT INTO test(name) VALUES ('grace hopper'), ('alan turing'), ('ada lovelace');""")
 
 
 
@@ -120,11 +120,11 @@ def index():
   #
   # example of a database query
   #
-  # cursor = g.conn.execute("SELECT name FROM test")
-  # names = []
-  # for result in cursor:
-  #   names.append(result['name'])  # can also be accessed using result[0]
-  # cursor.close()
+  cursor = g.conn.execute("SELECT name FROM test")
+  names = []
+  for result in cursor:
+    names.append(result['name'])  # can also be accessed using result[0]
+  cursor.close()
 
   #
   # Flask uses Jinja templates, which is an extension to HTML where you can
@@ -152,14 +152,26 @@ def index():
   #     <div>{{n}}</div>
   #     {% endfor %}
   #
-  # context = dict(data = names)
+  context = dict(data = names)
 
 
   #
   # render_template looks in the templates/ folder for files.
   # for example, the below file reads template/index.html
   #
-  return "Index page"
+  return render_template("index.html", **context)
+
+#
+# This is an example of a different path.  You can see it at
+# 
+#     localhost:8111/another
+#
+# notice that the functio name is another() rather than index()
+# the functions for each app.route needs to have different names
+#
+@app.route('/another')
+def another():
+  return render_template("anotherfile.html")
 
 
 # Example of adding new data to the database
