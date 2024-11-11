@@ -88,7 +88,6 @@ def teardown_request(exception):
   except Exception as e:
     pass
 
-
 #
 # @app.route is a decorator around index() that means:
 #   run index() whenever the user tries to access the "/" path using a GET request
