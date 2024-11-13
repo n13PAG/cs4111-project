@@ -47,53 +47,53 @@ DATABASEURI = "postgresql://"+DB_USER+":"+DB_PASSWORD+"@"+DB_SERVER+"/w4111"
 #
 # This line creates a database engine that knows how to connect to the URI above
 #
-engine = create_engine(DATABASEURI)
-engine.connect()
+# engine = create_engine(DATABASEURI)
+# engine.connect()
 
-res = engine.connect().execute(text("""SELECT * FROM users;"""))
-# print(res)
-with engine.connect() as conn:
-  create_table_comm = """
-  CREATE TABLE IF NOT EXISTS test (
-    id serial,
-    name text
-  );
-  """
-  res = conn.execute(text(create_table_comm))
+# res = engine.connect().execute(text("""SELECT * FROM users;"""))
+# # print(res)
+# with engine.connect() as conn:
+#   create_table_comm = """
+#   CREATE TABLE IF NOT EXISTS test (
+#     id serial,
+#     name text
+#   );
+#   """
+#   res = conn.execute(text(create_table_comm))
 
-  # res = connection.execute(text("""DROP TABLE IF EXISTS test;"""))
-  # res = connection.execute(text("""CREATE TABLE IF NOT EXISTS test (
-  #   id serial,
-  #   name text
-  # );"""))
-  # res = connection.execute(text("""INSERT INTO test(name) VALUES ('grace hopper'), ('alan turing'), ('ada lovelace');"""))
+#   # res = connection.execute(text("""DROP TABLE IF EXISTS test;"""))
+#   # res = connection.execute(text("""CREATE TABLE IF NOT EXISTS test (
+#   #   id serial,
+#   #   name text
+#   # );"""))
+#   # res = connection.execute(text("""INSERT INTO test(name) VALUES ('grace hopper'), ('alan turing'), ('ada lovelace');"""))
 
-@app.before_request
-def before_request():
-  """
-  This function is run at the beginning of every web request 
-  (every time you enter an address in the web browser).
-  We use it to setup a database connection that can be used throughout the request
+# @app.before_request
+# def before_request():
+#   """
+#   This function is run at the beginning of every web request 
+#   (every time you enter an address in the web browser).
+#   We use it to setup a database connection that can be used throughout the request
 
-  The variable g is globally accessible
-  """
-  try:
-    g.conn = engine.connect()
-  except:
-    print("uh oh, problem connecting to database")
-    import traceback; traceback.print_exc()
-    g.conn = None
+#   The variable g is globally accessible
+#   """
+#   try:
+#     g.conn = engine.connect()
+#   except:
+#     print("uh oh, problem connecting to database")
+#     import traceback; traceback.print_exc()
+#     g.conn = None
 
-@app.teardown_request
-def teardown_request(exception):
-  """
-  At the end of the web request, this makes sure to close the database connection.
-  If you don't the database could run out of memory!
-  """
-  try:
-    g.conn.close()
-  except Exception as e:
-    pass
+# @app.teardown_request
+# def teardown_request(exception):
+#   """
+#   At the end of the web request, this makes sure to close the database connection.
+#   If you don't the database could run out of memory!
+#   """
+#   try:
+#     g.conn.close()
+#   except Exception as e:
+#     pass
 
 
 #
@@ -176,8 +176,7 @@ def index():
   # for example, the below file reads template/index.html
   #
   # return render_template("index.html", **context)
-  # return render_template("index.html")
-  return
+  return render_template("index.html")
 
 #
 # This is an example of a different path.  You can see it at
