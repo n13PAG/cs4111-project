@@ -175,12 +175,7 @@ def index():
   # render_template looks in the templates/ folder for files.
   # for example, the below file reads template/index.html
   #
-<<<<<<< HEAD
   return render_template("/index.html/", **context)
-=======
-  # return render_template("index.html", **context)
-  return render_template("index.html")
->>>>>>> @{u}
 
 #
 # This is an example of a different path.  You can see it at
