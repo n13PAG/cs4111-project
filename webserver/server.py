@@ -123,17 +123,18 @@ def index():
 
   # DEBUG: this is debugging code to see what request looks like
   print(request.args)
+  print("index")
 
 
   #
   # example of a database query
   #
-  names = []
-  cursor = g.conn.execute(text("""SELECT name From users"""))
-  for result in cursor:
-    names.append(result[0])  # can also be accessed using result[0]
-  cursor.close()
-  print(names[0])
+  # names = []
+  # cursor = g.conn.execute(text("""SELECT name From users"""))
+  # for result in cursor:
+  #   names.append(result[0])  # can also be accessed using result[0]
+  # cursor.close()
+  # print(names[0])
       
   # cursor = g.conn.execute("SELECT name FROM test")
   # names = []
@@ -167,7 +168,7 @@ def index():
   #     <div>{{n}}</div>
   #     {% endfor %}
   #
-  context = dict(data = names)
+  # context = dict(data = names)
 
 
   #
@@ -175,7 +176,8 @@ def index():
   # for example, the below file reads template/index.html
   #
   # return render_template("index.html", **context)
-  return render_template("index.html")
+  # return render_template("index.html")
+  return
 
 #
 # This is an example of a different path.  You can see it at
