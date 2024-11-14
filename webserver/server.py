@@ -203,11 +203,11 @@ def signup():
       u_pid = null
       u_sid = null
       if is_student:
-        u_pid = null
+        u_pid = None
         u_sid = u_id
       else:
         u_pid = u_id
-        u_sid = null
+        u_sid = None
 
       # TODO: Add check for when the table is empty
 
