@@ -190,9 +190,21 @@ def add():
   return redirect('/')
 
 
-@app.route('/login')
+# Route for handling the login page logic
+@app.route('/login', methods=['GET', 'POST'])
 def login():
-  return render_template('login.html')
+    error = None
+    if request.method == 'POST':
+      user_table = metaData.tables['users']
+      uni_query = user_table.select().where(user_table.c.uni == request.form['uni'])
+      result = g.conn.execute(uni_query)
+      uni = result.fetchone()
+      #if no row, then no uni exists as a user
+      if result.rowcount == 0:
+        error = 'Invalid Credentials. Please try again.'
+      else:
+        return redirect(url_for('tbd'))
+    return render_template('login.html', error=error)
 
 
 if __name__ == "__main__":
