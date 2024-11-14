@@ -18,8 +18,9 @@ Read about it online.
 import os
 from sqlalchemy import *
 from sqlalchemy.pool import NullPool
-from flask import Flask, request, render_template, g, redirect, Response
+from flask import Flask, request, render_template, g, redirect, Response, url_for
 from sqlalchemy import text
+from flask_login import UserMixin, LoginManager
 
 tmpl_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
 app = Flask(__name__, template_folder=tmpl_dir)
@@ -47,53 +48,37 @@ DATABASEURI = "postgresql://"+DB_USER+":"+DB_PASSWORD+"@"+DB_SERVER+"/w4111"
 #
 # This line creates a database engine that knows how to connect to the URI above
 #
-# engine = create_engine(DATABASEURI)
-# engine.connect()
+engine = create_engine(DATABASEURI)
+engine.connect()
+metaData = MetaData()
+metaData.reflect(bind=engine)
 
-# res = engine.connect().execute(text("""SELECT * FROM users;"""))
-# # print(res)
-# with engine.connect() as conn:
-#   create_table_comm = """
-#   CREATE TABLE IF NOT EXISTS test (
-#     id serial,
-#     name text
-#   );
-#   """
-#   res = conn.execute(text(create_table_comm))
+@app.before_request
+def before_request():
+  """
+  This function is run at the beginning of every web request 
+  (every time you enter an address in the web browser).
+  We use it to setup a database connection that can be used throughout the request
 
-#   # res = connection.execute(text("""DROP TABLE IF EXISTS test;"""))
-#   # res = connection.execute(text("""CREATE TABLE IF NOT EXISTS test (
-#   #   id serial,
-#   #   name text
-#   # );"""))
-#   # res = connection.execute(text("""INSERT INTO test(name) VALUES ('grace hopper'), ('alan turing'), ('ada lovelace');"""))
+  The variable g is globally accessible
+  """
+  try:
+    g.conn = engine.connect()
+  except:
+    print("uh oh, problem connecting to database")
+    import traceback; traceback.print_exc()
+    g.conn = None
 
-# @app.before_request
-# def before_request():
-#   """
-#   This function is run at the beginning of every web request 
-#   (every time you enter an address in the web browser).
-#   We use it to setup a database connection that can be used throughout the request
-
-#   The variable g is globally accessible
-#   """
-#   try:
-#     g.conn = engine.connect()
-#   except:
-#     print("uh oh, problem connecting to database")
-#     import traceback; traceback.print_exc()
-#     g.conn = None
-
-# @app.teardown_request
-# def teardown_request(exception):
-#   """
-#   At the end of the web request, this makes sure to close the database connection.
-#   If you don't the database could run out of memory!
-#   """
-#   try:
-#     g.conn.close()
-#   except Exception as e:
-#     pass
+@app.teardown_request
+def teardown_request(exception):
+  """
+  At the end of the web request, this makes sure to close the database connection.
+  If you don't the database could run out of memory!
+  """
+  try:
+    g.conn.close()
+  except Exception as e:
+    pass
 
 
 #
@@ -129,18 +114,12 @@ def index():
   #
   # example of a database query
   #
-  # names = []
-  # cursor = g.conn.execute(text("""SELECT name From users"""))
-  # for result in cursor:
-  #   names.append(result[0])  # can also be accessed using result[0]
-  # cursor.close()
-  # print(names[0])
-      
-  # cursor = g.conn.execute("SELECT name FROM test")
-  # names = []
-  # for result in cursor:
-  #   names.append(result['name'])  # can also be accessed using result[0]
-  # cursor.close()
+  names = []
+  cursor = g.conn.execute(text("""SELECT name From users"""))
+  for result in cursor:
+    names.append(result[0])  # can also be accessed using result[0]
+  cursor.close()
+  print(names[0])
 
   #
   # Flask uses Jinja templates, which is an extension to HTML where you can
@@ -168,15 +147,14 @@ def index():
   #     <div>{{n}}</div>
   #     {% endfor %}
   #
-  # context = dict(data = names)
+  context = dict(data = names)
 
 
   #
   # render_template looks in the templates/ folder for files.
   # for example, the below file reads template/index.html
   #
-  # return render_template("index.html", **context)
-  return render_template("index.html")
+  return render_template("index.html", **context)
 
 #
 # This is an example of a different path.  You can see it at
@@ -190,21 +168,31 @@ def index():
 def another():
   return render_template("anotherfile.html")
 
+@app.route('/home')
+def home():
+  user_table = metaData.tables['users']
+  query = user_table.select().where(user_table.c.name == "test")
+  result = g.conn.execute(query)
+  name = result.fetchone()
+  print(name)
+  return render_template("home.html")
+
+@app.route('/signup')
+def signup():
+  return render_template("signup.html")
+
 
 # Example of adding new data to the database
 @app.route('/add', methods=['POST'])
 def add():
   name = request.form['name']
-  print(name)
-  cmd = 'INSERT INTO test(name) VALUES (:name1), (:name2)';
-  g.conn.execute(text(cmd), name1 = name, name2 = name);
+  print(text(name))
   return redirect('/')
 
 
 @app.route('/login')
 def login():
-    abort(401)
-    this_is_never_executed()
+  return render_template('login.html')
 
 
 if __name__ == "__main__":
