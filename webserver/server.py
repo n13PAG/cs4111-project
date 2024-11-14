@@ -215,7 +215,7 @@ def signup():
       cursor = g.conn.execute(text("""SELECT MAX(uid) From users GROUP BY uid"""))
       for result in cursor:
         uids.append(result[0])  # can also be accessed using result[0]
-        cursor.close()
+      cursor.close()
       max_id = uids[0]
       next_id = int(max_id) + 1
 
