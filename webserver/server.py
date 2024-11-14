@@ -209,7 +209,14 @@ def signup():
         u_pid = u_id
         u_sid = null
 
-      max_id = user_table.select(func.max(user_table.c.uid))
+      # TODO: Add check for when the table is empty
+
+      uids = []
+      cursor = g.conn.execute(text("""SELECT MAX(uid) From users GROUP BY uid"""))
+      for result in cursor:
+        uids.append(result[0])  # can also be accessed using result[0]
+        cursor.close()
+      max_id = uids[0]
       next_id = int(max_id) + 1
 
       user_table = metaData.tables['users']
