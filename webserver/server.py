@@ -217,7 +217,7 @@ def signup():
         uids.append(result[0])  # can also be accessed using result[0]
       cursor.close()
       max_id = uids[0]
-      next_id = int(max_id) + 1
+      next_id = 15
 
       user_table = metaData.tables['users']
       query = insert(user_table).values(uid=next_id, sid=u_sid, pid=u_pid, uni=u_uni, email=u_email, name=u_name)
