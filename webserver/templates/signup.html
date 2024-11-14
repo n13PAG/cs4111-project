@@ -7,6 +7,15 @@
 </head>
 <body>
     <h1>Sign Up</h1>
+    <form action="/signup" method="POST">
+        <input type="text" placeholder="email" name="email" >
+         <input type="password" placeholder="uni" name="uni" >
+         <input type="text" placeholder="name" name="name" >
+         <label>Are you a student?</label>
+         <input type="checkbox" name="is_student">
+        <input class="btn btn-default" type="submit" value="Login">
+      </form>
+    
     <a href="{{url_for('login')}}">Already have an account? Login</a><br>
 </body>
 </html>

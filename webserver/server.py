@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 """
+
 Columbia W4111 Intro to databases
 Example webserver
 
@@ -179,6 +180,50 @@ def home():
 
 @app.route('/signup')
 def signup():
+  error = None
+  if request.method == 'POST':
+
+    u_uni = request.form['uni']
+    u_email = request.form['email']
+    u_name = request.form['name']
+    u_id = int(u_uni[len(u_uni) - 4])
+
+    is_student = request.form['is_student']
+
+    user_table = metaData.tables['users']
+
+    # Check if user with the uni entered exists
+    check_query = user_table.select().where(user_table.c.uni == u_uni)
+    check_result = g.conn.execute(check_query)
+
+    if check_result.rowcount > 0:
+      error = 'User taken. Please enter new .'
+      return render_template("signup.html")
+    else:
+      u_pid = null
+      u_sid = null
+      if is_student:
+        u_pid = null
+        u_sid = u_id
+      else:
+        u_pid = u_id
+        u_sid = null
+
+      max_id = user_table.select(func.max(user_table.c.uid))
+      next_id = int(max_id) + 1
+
+      user_table = metaData.tables['users']
+      query = insert(user_table).values(uid=next_id, sid=u_sid, pid=u_pid, uni=u_uni, email=u_email, name=u_name)
+      
+      result = g.conn.execute(query)
+      g.conn.commit()
+
+      if is_student:
+        return redirect(url_for('dashboard/student'))
+      else:
+        return redirect(url_for('dashboard/professor'))
+
+
   return render_template("signup.html")
 
 
