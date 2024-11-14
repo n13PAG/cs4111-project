@@ -178,7 +178,7 @@ def home():
   print(name)
   return render_template("home.html")
 
-@app.route('/signup', methods=['POST'])
+@app.route('/signup', methods=['GET','POST'])
 def signup():
   error = None
   if request.method == 'POST':
