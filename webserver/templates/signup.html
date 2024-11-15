@@ -1,21 +1,31 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign Up</title>
-</head>
-<body>
+{% extends 'base.html' %}
+
+{% block content %}
+    {% if error %}
+    <div>{{ error }}</div>
+    {% endif %}
     <h1>Sign Up</h1>
     <form action="/signup" method="POST">
-        <input type="text" placeholder="email" name="email" >
-         <input type="password" placeholder="uni" name="uni" >
-         <input type="text" placeholder="name" name="name" >
-         <label>Are you a student?</label>
-         <input type="checkbox" name="is_student">
-        <input class="btn btn-default" type="submit" value="Login">
+        {{ form.hidden_tag() }}
+        <div class="mb-3">
+            {{ form.email.label(class="form-label") }}
+            {{ form.email(class="form-control") }}
+        </div>
+        <div class="mb-3">
+            {{ form.uni.label(class="form-label") }}
+            {{ form.uni(class="form-control") }}
+        </div>
+        <div class="mb-3">
+            {{ form.name.label(class="form-label") }}
+            {{ form.name(class="form-control") }}
+        </div>
+        <div class="mb-3">
+            {{ form.is_student.label(class="form-label") }}
+            {{ form.is_student(class="form-check-input") }}
+        </div>
+        <br/>
+        {{ form.submit(class="btn btn-primary") }}
       </form>
     
     <a href="{{url_for('login')}}">Already have an account? Login</a><br>
-</body>
-</html>
+{% endblock %}

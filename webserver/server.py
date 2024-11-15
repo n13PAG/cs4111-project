@@ -22,6 +22,8 @@ from sqlalchemy.pool import NullPool
 from flask import Flask, request, render_template, g, redirect, Response, url_for
 from sqlalchemy import text
 from flask_login import UserMixin, LoginManager
+from webforms import UserLoginForm
+from webforms import SignUpForm
 
 tmpl_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
 app = Flask(__name__, template_folder=tmpl_dir)
@@ -53,6 +55,7 @@ engine = create_engine(DATABASEURI)
 engine.connect()
 metaData = MetaData()
 metaData.reflect(bind=engine)
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'for dev') 
 
 @app.before_request
 def before_request():
@@ -180,58 +183,64 @@ def home():
 
 @app.route('/signup', methods=['GET','POST'])
 def signup():
+  form = SignUpForm()
   error = None
   if request.method == 'POST':
 
-    u_uni = request.form['uni']
-    u_email = request.form['email']
-    u_name = request.form['name']
-    u_id = int(u_uni[len(u_uni) - 4])
+    # Validation
+    if form.validate_on_submit():
+      u_uni = form.uni.data
+      u_email = form.email.data
+      u_name = form.name.data
+      u_id = int(u_uni[len(u_uni) - 4:])
 
-    is_student = request.form['is_student']
-
-    user_table = metaData.tables['users']
-
-    # Check if user with the uni entered exists
-    check_query = user_table.select().where(user_table.c.uni == u_uni)
-    check_result = g.conn.execute(check_query)
-
-    if check_result.rowcount > 0:
-      error = 'User taken. Please enter new .'
-      return render_template("signup.html")
-    else:
-      u_pid = null
-      u_sid = null
-      if is_student:
-        u_pid = None
-        u_sid = u_id
-      else:
-        u_pid = u_id
-        u_sid = None
-
-      # TODO: Add check for when the table is empty
-
-      uids = []
-      cursor = g.conn.execute(text("""SELECT MAX(uid) From users GROUP BY uid"""))
-      for result in cursor:
-        uids.append(result[0])  # can also be accessed using result[0]
-      cursor.close()
-      max_id = uids[0]
-      next_id = 15
+      is_student = form.is_student.data
 
       user_table = metaData.tables['users']
-      query = insert(user_table).values(uid=next_id, sid=u_sid, pid=u_pid, uni=u_uni, email=u_email, name=u_name)
-      
-      result = g.conn.execute(query)
-      g.conn.commit()
 
-      if is_student:
-        return redirect(url_for('dashboard/student'))
+      # Check if user with the uni entered exists
+      check_query = user_table.select().where(user_table.c.uni == u_uni)
+      check_result = g.conn.execute(check_query)
+
+      if check_result.rowcount > 0:
+        error = 'User taken. Please enter new .'
+        return render_template("signup.html", error=error, form=form)
       else:
-        return redirect(url_for('dashboard/professor'))
+        u_pid = null
+        u_sid = null
+        if is_student:
+          u_pid = None
+          u_sid = u_id
+        else:
+          u_pid = u_id
+          u_sid = None
 
+        # TODO: Add check for when the table is empty
 
-  return render_template("signup.html")
+        uids = []
+        cursor = g.conn.execute(text("""SELECT MAX(uid) From users"""))
+        for result in cursor:
+          uids.append(result[0])  # can also be accessed using result[0]
+        cursor.close()
+        max_id = uids[0]
+        print(max_id)
+        next_id = int(max_id) + 1
+
+        user_table = metaData.tables['users']
+        query = insert(user_table).values(uid=next_id, sid=u_sid, pid=u_pid, uni=u_uni, email=u_email, name=u_name)
+        
+        result = g.conn.execute(query)
+        g.conn.commit()
+
+        if is_student:
+          return redirect(url_for('dashboard/student'))
+        else:
+          return redirect(url_for('dashboard/professor'))
+    else:
+      print(form.errors)
+      error = "Invalid Input. Please try again."  
+
+  return render_template("signup.html", error=error, form=form)
 
 
 # Example of adding new data to the database
@@ -243,20 +252,40 @@ def add():
 
 
 # Route for handling the login page logic
+# @app.route('/login', methods=['GET', 'POST'])
+# def login():
+#     error = None
+#     if request.method == 'POST':
+#       user_table = metaData.tables['users']
+#       uni_query = user_table.select().where(user_table.c.uni == request.form['uni'])
+#       result = g.conn.execute(uni_query)
+#       uni = result.fetchone()
+#       #if no row, then no uni exists as a user
+#       if result.rowcount == 0:
+#         error = 'Invalid Credentials. Please try again.'
+#       else:
+#         return redirect(url_for('tbd'))
+#     return render_template('login.html', error=error)
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    error = None
-    if request.method == 'POST':
+  form = UserLoginForm()
+  error = None
+  if request.method == 'POST':
+    # Validation
+    if form.validate_on_submit():
       user_table = metaData.tables['users']
-      uni_query = user_table.select().where(user_table.c.uni == request.form['uni'])
+      uni_query = user_table.select().where(user_table.c.uni == form.uni.data)
       result = g.conn.execute(uni_query)
-      uni = result.fetchone()
       #if no row, then no uni exists as a user
       if result.rowcount == 0:
         error = 'Invalid Credentials. Please try again.'
       else:
-        return redirect(url_for('tbd'))
-    return render_template('login.html', error=error)
+        return redirect(url_for('index'))
+    else:
+      error = 'Invalid Input. Please try again.'
+
+  return render_template("login.html", form = form, error = error)
 
 
 # Custom error pages

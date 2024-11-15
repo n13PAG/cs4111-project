@@ -10,3 +10,4 @@ Flask-Testing==0.8.1
 Flask-SQLAlchemy==3.1.1
 python-decouple==3.8
 Flask-MDEditor==0.1.5
+email-validator
