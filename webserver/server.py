@@ -233,15 +233,22 @@ def signup():
         g.conn.commit()
 
         if is_student:
-          return redirect(url_for('dashboard/student'))
+          return redirect(url_for('stud_dashboard')
         else:
-          return redirect(url_for('dashboard/professor'))
+          return redirect(url_for('prof_dashboard'))
     else:
       print(form.errors)
       error = "Invalid Input. Please try again."  
 
   return render_template("signup.html", error=error, form=form)
-
+#professordashboard
+@app.route('/prof_dashboard', methods=['GET','POST'])
+def prof_dashboard():
+  return render_template('prof_dashboard.html')
+#studentdashboard
+@app.route('/stud_dashboard', methods=['GET','POST'])
+def stud_dashboard():
+  return render_template('stud_dashboard.html')
 
 # Example of adding new data to the database
 @app.route('/add', methods=['POST'])
