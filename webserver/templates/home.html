@@ -1,17 +1,15 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Home</title>
-</head>
-<body>
-    <div>
+{% extends 'base.html' %}
+
+{% block content %}
+
+    <div class="container px-4 px-lg-5 text-center">
         <h1>Project Name</h1>
         <h2>A note sharing app</h2>
-        <a href="{{url_for('login')}}" class="button">Login</a><br>
-        <a href="{{url_for('signup')}}" class="button">Sign up</a>
+        <div class="d-grid gap-3 d-sm-flex justify-content-sm-center justify-content-xl-start">
+            <a class="btn btn-primary btn-lg" href="{{url_for('login')}}" class="button">Login</a><br>
+            <a class="btn btn-primary btn-lg" href="{{url_for('signup')}}" class="button">Sign up</a>
+        </div>
     </div>
-    </div>
-</body>
-</html>
+
+
+{% endblock %}
