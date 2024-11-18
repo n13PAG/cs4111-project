@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+    <form action="/createnote" method="POST">
+        {{ form.csrf_token }}
+        {{ form.content.label }} {{ form.content() }}
+        {{ form.submit() }}
+    </form>    
+
+{% endblock %}

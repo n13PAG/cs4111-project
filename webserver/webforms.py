@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, DateField, IntegerField, EmailField, PasswordField, BooleanField, SelectField, SubmitField
+from wtforms import StringField, DateField, IntegerField, EmailField, PasswordField, BooleanField, SelectField, SubmitField, FileField
 from wtforms import validators
 from flask_mdeditor import  MDEditorField
 
@@ -22,6 +22,10 @@ class AddCourseForm(FlaskForm):
     semester = SelectField(u'Semester', choices=[('FALL', 'FALL'), ('SPRING', 'SPRING'), ('SUMMER', 'SUMMER')])
     year = IntegerField('Year', [validators.DataRequired()])
     submit = SubmitField('Add Course')
+
+class UploadForm(FlaskForm):
+    file_link = StringField('PDF link', [validators.DataRequired()])
+    submit = SubmitField('Submit')
 
 class MDForm(FlaskForm):
     content = MDEditorField('Body', validators=[validators.DataRequired()])
