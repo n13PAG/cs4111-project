@@ -28,13 +28,11 @@ from webforms import SignUpForm
 from webforms import UploadForm
 from webforms import AddCourseForm
 from webforms import AddCourseCategoryForm
+from webforms import SearchForm
 
 tmpl_dir = os.path.join(os.path.dirname(
     os.path.abspath(__file__)), "templates")
 app = Flask(__name__, template_folder=tmpl_dir)
-
-login_manager = LoginManager()
-login_manager.init_app(app)
 
 # XXX: The Database URI should be in the format of:
 #
@@ -342,11 +340,24 @@ def dashboard():
             if r.pid == None:
                 session["user_uni"] = r.uni
                 form = UploadForm()
+                search_form = SearchForm()
+
+                courses = []
+                course_names = []
+                cursor = g.conn.execute(text("""SELECT (name) FROM courses"""))
+                for result in cursor:
+                    # can also be accessed using result[0]
+                    course_names.append(result[0])
+                cursor.close()
+
+                search_form.course_name.choices = course_names
+                form.course_name.choices = course_names
 
                 return render_template(
                     "dashboard.html",
                     error=None,
                     form=form,
+                    search_form=search_form,
                     is_student=True,
                     is_professor=False,
                 )
@@ -372,36 +383,106 @@ def dashboard():
         for r in result:
             if r.pid == None:
                 form = UploadForm()
+
+                search_form = SearchForm()
+
+                upload_course_name = form.course_name.data
+                course_name = search_form.course_name.data
+
+                courses = []
+                course_names = []
+                cursor = g.conn.execute(text("""SELECT (name) FROM courses"""))
+                for result in cursor:
+                    # can also be accessed using result[0]
+                    course_names.append(result[0])
+                cursor.close()
+
+                search_form.course_name.choices = course_names
+                form.course_name.choices = course_names
+
                 print("Link that was saved:")
                 # print(form.file_link.data)
-
+                # course_cat = []
+                # cursor = g.conn.execute(text("""SELECT From users"""))
+                # for result in cursor:
+                #     # can also be accessed using result[0]
+                #     names.append(result[0])
+                #     cursor.close()
+                # print(names[0])
                 if form.validate_on_submit():
                     u_sid = r.sid
                     text = form.file_link.data
                     # print(u_sid)
                     # print(text)
                     uploads_table = metaData.tables["uploads"]
+                    belongs_table = metaData.tables["belongs"]
+
                     uploads_query = insert(uploads_table).values(
                         sid=u_sid, content=text, upvotes=0, upload_date=None
                     )
                     result = g.conn.execute(uploads_query)
                     g.conn.commit()
 
+                    note_id = get_next_id("""uploads""", """note_id""")
+
+                    notes = []
+                    cursor = g.conn.execute(
+                        text("""SELECT (note_id,conten) FROM uploads""")
+                    )
+                    for result in cursor:
+                        # can also be accessed using result[0]
+                        notes.append(result[0])
+                    cursor.close()
+                    print(notes)
+
+                    #
+                    #    sid=u_sid, content=text, upvotes=0, upload_date=None
+                    # )
+                    # result = g.conn.execute(uploads_query)
+                    # g.conn.commit()
+
                     return render_template(
                         "dashboard.html",
                         error=None,
                         form=form,
+                        search_form=search_form,
                         is_student=True,
                         is_professor=False,
                     )
+
+                if search_form.validate_on_submit():
+                    course_name = search_form.course_name.data
+                    # professor_name = search_form.professor_name.data
+                    # category_name = search_form.category_name.data
+                    cid_query = course_table.select().where(course_table.c.name == course_name)
+                    cid_result = g.conn.execute(cid_query)
+                    for r in cid_result:
+                        cid = r.cid
+                    categories_list = []
+                    cursor = g.conn.execute(text(
+                        """SELECT (category_id, name_) FROM Categories_Held WHERE Categories_Held.cid == """ + cid + """"" """))
+                    for result in cursor:
+                        # can also be accessed using result[0]
+                        categories_list.append(result[0])
+                    cursor.close()
+
+                    return render_template(
+                        "dashboard.html",
+                        error=None,
+                        form=form,
+                        search_form=search_form,
+                        is_student=True,
+                        is_professor=False,
+                    )
+
             elif r.sid == None:
                 form = AddCourseForm()
                 cat_form = AddCourseCategoryForm()
+                search_form = SearchForm()
 
                 course_table = metaData.tables["courses"]
                 courses_created_table = metaData.tables["course_created"]
                 categories_table = metaData.tables["categories_held"]
-                belongs_table = metaData.tables["belongs"]
 
                 if form.validate_on_submit():
                     u_pid = r.pid
@@ -434,6 +515,12 @@ def dashboard():
                         result = g.conn.execute(query)
                         g.conn.commit()
 
+                        query = insert(categories_table).values(
+                            name_="General", description="A general category", cid=cid
+                        )
+                        result = g.conn.execute(query)
+                        g.conn.commit()
+
                         courses = []
                         cursor = g.conn.execute(
                             text("""SELECT * FROM courses"""))
@@ -442,6 +529,16 @@ def dashboard():
                             courses.append(result[0])
                         cursor.close()
                         print(courses)
+
+                        error = None
+                        return render_template(
+                            "dashboard.html",
+                            error=error,
+                            form=form,
+                            category_form=cat_form,
+                            student=False,
+                            is_professor=True,
+                        )
 
                 if cat_form.validate_on_submit():
                     cid = cat_form.cid.data
@@ -499,6 +596,60 @@ def dashboard():
     return "text"
 
 
+@app.route("/upload", methods=["GET", "POST"])
+def upload():
+
+    if request.method == "GET":
+        # course_table = metaData.tables["courses"]
+        # course_query = course_table.select().where(course_table.c.cid == cid)
+
+        form = UploadForm()
+
+        category_names = []
+        cursor = g.conn.execute(
+            text("""SELECT (name_) FROM categories_held"""))
+        for result in cursor:
+            # can also be accessed using result[0]
+            category_names.append(result[0])
+        cursor.close()
+
+        form.category_name.choices = category_names
+
+        return render_template(
+            "upload.html",
+            error=None,
+            form=form
+        )
+    elif request.method == "POST":
+        sid = session['user_sid']
+        cid = session['cid']
+        course_name = session['course_name']
+
+        form = UploadForm()
+
+        category_names = []
+        cursor = g.conn.execute(
+            text("""SELECT (name_) FROM categories_held"""))
+        for result in cursor:
+            # can also be accessed using result[0]
+            category_names.append(result[0])
+        cursor.close()
+
+        form.category_name.choices = category_names
+
+        if form.validate_on_submit():
+            text = form.file_link.data
+            category_name = form.category_name.data
+            categories_held = metaData.tables["categories_held"]
+            cat_query = categories_held.select().where(
+                categories_held.c.name_ == category_name)
+            result = g.conn.execute(cat_query)
+
+            category_id = 0
+            for r in result:
+                category_id =
+
+
 # Example of adding new data to the database
 @app.route("/add", methods=["POST"])
 def add():
@@ -544,6 +695,37 @@ def page_not_found(e):
 @app.errorhandler(500)
 def internal_server_error(e):
     return render_template("500.html"), 500
+
+
+def get_courses():
+    courses = []
+    cursor = g.conn.execute(text("""SELECT * FROM courses"""))
+    for result in cursor:
+        # can also be accessed using result[0]
+        courses.append(result[0])
+    cursor.close()
+
+
+def get_course_names():
+    course_names = []
+    cursor = g.conn.execute(text("""SELECT (name) FROM courses"""))
+    for result in cursor:
+        # can also be accessed using result[0]
+        course_names.append(result[0])
+    cursor.close()
+
+
+def get_next_id(table_name, col_name):
+    uids = []
+    cursor = g.conn.execute(
+        text("""SELECT MAX(""" + col_name + """), sid From """ + table_name)
+    )
+    for result in cursor:
+        # can also be accessed using result[0]
+        uids.append(result[0])
+    cursor.close()
+    max_id = uids[0]
+    return int(max_id) + 1
 
 
 if __name__ == "__main__":

@@ -1,0 +1,23 @@
+% extends 'base.html' %}
+
+{% block content %}
+    <h1>Student Dashboard</h1>
+    <h2>Upload Note</h2>
+    <form action="/upload" method="POST">
+        {{ form.hidden_tag() }}
+        <div class="mb-3">
+            {{ form.file_link.label(class="form-label") }}
+            {{ form.file_link(class="form-control") }}
+        </div>
+        <div class="mb-3">
+            {{ form.course_name.label(class="form-label") }}
+            {{ form.course_name(class="form-control") }}
+        </div>
+        <div class="mb-3">
+            {{ form.category_name.label(class="form-label") }}
+            {{ form.category_name(class="form-control") }}
+        </div>                   
+        <br/>
+        {{ form.submit(class="btn btn-primary") }}
+    </form>
+{% endblock %}
