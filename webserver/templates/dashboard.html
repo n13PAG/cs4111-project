@@ -7,7 +7,7 @@
     <div class="container">
     <h2>Upload Note for Course</h2>
     <h3>Select Course</h3>
-    <form action="/dashboard/upload" method="POST">
+    <form action="/dashboard" method="POST">
         {{ course_form.hidden_tag() }}
         <div class="mb-3">
             {{ course_form.course_name.label(class="form-label") }}

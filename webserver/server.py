@@ -383,6 +383,7 @@ def dashboard():
 
     elif request.method == "POST":
         user = session["user_uni"]
+        user_sid = session["user_sid"]
         user_table = metaData.tables["users"]
         uni_query = user_table.select().where(user_table.c.uni == user)
         result = g.conn.execute(uni_query)
@@ -421,6 +422,60 @@ def dashboard():
 
                 search_form.course_name.choices = course_names
                 course_form.course_name.choices = course_names
+
+                if course_form.validate_on_submit():
+                    # get selected course name
+                    select_course_name = course_form.course_name.data
+
+                    course_table = metaData.tables["courses"]
+                    # get cid
+                    cid_query = course_table.select().where(
+                        course_table.c.name == select_course_name)
+                    cid_result = g.conn.execute(cid_query)
+                    cid = -1
+                    for r in cid_result:
+                        cid = r.cid
+
+                    return redirect(url_for("upload", course_name=select_course_name, cid=cid, sid=user_sid))
+
+                # if course_form.validate_on_submit():
+
+                #     # get selected course name
+                #     select_course_name = course_form.course_name.data
+
+                #     # get cid
+                #     cid_query = course_table.select().where(
+                #         course_table.c.name == select_course_name)
+                #     cid_result = g.conn.execute(cid_query)
+                #     cid = -1
+                #     for r in cid_result:
+                #         cid = r.cid
+
+                #     # get categories held in course using cid
+                #     from sqlalchemy import text
+                #     category_names = []
+                #     cursor = g.conn.execute(
+                #         text("""SELECT (name_) FROM categories_held WHERE cid=""" + str(cid)))
+                #     for result in cursor:
+                #         # can also be accessed using result[0]
+                #         category_names.append(result[0])
+                #     cursor.close()
+
+                #     # set session variables
+                #     session["cid"] = cid
+                #     session["course_name"] = select_course_name
+
+                #     upload_form = UploadForm()
+
+                #     # set form selection to category names
+                #     upload_form.category_name.choices = category_names
+
+                #     return render_template(
+                #         "upload.html",
+                #         error=None,
+                #         form=upload_form,
+                #         course_name=select_course_name
+                #     )
 
                 if search_form.validate_on_submit():
                     course_name = search_form.course_name.data
@@ -588,9 +643,35 @@ def dashboard():
     return "text"
 
 
-@app.route("/dashboard/upload", methods=["GET", "POST"])
+@app.route("/upload", methods=["GET", "POST"])
 def upload():
     if request.method == "GET":
+        # get url data
+        cid = request.args["cid"]
+        course_name = request.args["course_name"]
+        sid = request.args["sid"]
+
+        # set session data
+        session["user_sid"] = sid
+        session["course_name"] = course_name
+        session["cid"] = cid
+
+        form = UploadForm()
+
+        # get categories held in course using cid
+        from sqlalchemy import text
+        category_names = []
+        cursor = g.conn.execute(
+            text("""SELECT (name_) FROM categories_held WHERE cid=""" + str(cid)))
+        for result in cursor:
+            # can also be accessed using result[0]
+            category_names.append(result[0])
+        cursor.close()
+
+        # set form selection to category names
+        form.category_name.choices = category_names
+
+        print(session["user_sid"])
 
         return render_template(
             "upload.html",
@@ -600,18 +681,18 @@ def upload():
         )
     elif request.method == "POST":
 
-        # get cid
-        course_table = metaData.tables["courses"]
-        course_name = request.form['course_name']
-        cid_query = course_table.select().where(course_table.c.name == course_name)
-        cid_result = g.conn.execute(cid_query)
-        cid = -1
-        for r in cid_result:
-            cid = r.cid
+        # # get cid
+        # course_table = metaData.tables["courses"]
+        # course_name = request.form['course_name']
+        # cid_query = course_table.select().where(course_table.c.name == course_name)
+        # cid_result = g.conn.execute(cid_query)
+        # cid = -1
+        # for r in cid_result:
+        #     cid = r.cid
 
-        # set session variables
-        session["cid"] = cid
-        session["course_name"] = course_name
+        # # set session variables
+        # session["cid"] = cid
+        # session["course_name"] = course_name
 
         # Get session variables
         sid = session["user_sid"]
@@ -680,9 +761,12 @@ def upload():
             # add note to notes contained table
             note_contained_table = metaData.tables["note_contained"]
             note_contained_query = insert(note_contained_table).values(
-                note_id=note_id, rid=rid, content=text, upvotes=0, upload=date)
+                note_id=note_id, rid=rid, content=text, upvotes=0, upload_date=date)
             result = g.conn.execute(note_contained_query)
             g.conn.commit()
+
+            # set session data
+            session["category_name"] = category_name
 
             return render_template(
                 "upload.html",
@@ -690,7 +774,6 @@ def upload():
                 form=form,
                 course_name=course_name
             )
-
         else:
             return render_template(
                 "upload.html",
@@ -802,7 +885,7 @@ def get_course_names():
 def get_next_id(table_name, col_name):
     uids = []
     cursor = g.conn.execute(
-        text("""SELECT MAX(""" + col_name + """), sid From """ + table_name)
+        text("""SELECT MAX(""" + col_name + """) From """ + table_name)
     )
     for result in cursor:
         # can also be accessed using result[0]
