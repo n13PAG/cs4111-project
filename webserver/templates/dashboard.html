@@ -4,15 +4,43 @@
 
 {% if is_student %}
     <h1>Student Dashboard</h1>
+    <h2>Upload Note</h2>
     <form action="/dashboard" method="POST">
         {{ form.hidden_tag() }}
         <div class="mb-3">
             {{ form.file_link.label(class="form-label") }}
             {{ form.file_link(class="form-control") }}
-        </div>            
+        </div>         
         <br/>
         {{ form.submit(class="btn btn-primary") }}
     </form>
+    <h2>Search Notes</h2>
+    <form action="/dashboard" method="POST">
+        {{ search_form.hidden_tag() }} 
+        <br/>
+        {{ search_form.submit(class="btn btn-primary") }}
+    </form>
+    {% if notes %}
+    <div class="container">
+        <table class="table">
+            <thead>
+                <th>No</th>
+                <th>Note_id</th>
+                <th>Link</th>
+                <th>Upload Date</th>
+                <th>Upvotes</th>
+            </thead>
+            <tbody>
+              {% for row in notes %}
+              <tr>
+              <td>{{ loop.index }}</td>
+              {% for cell in row %}
+                <td>{{ cell }}</td>
+                {% endfor %}
+              </tr>
+              {% endfor %}
+      </div>
+    {% endif %}
 {% endif %}
 {% if is_professor %}
     {% if error %}
@@ -20,6 +48,7 @@
     {% endif %}
     <h1>Professor Dashboard</h1>
     <div class="container">
+        <h2>Add Course</h2>
         <form action="/dashboard" method="POST">
             {{ form.hidden_tag() }}
             <div class="mb-3">
@@ -43,6 +72,7 @@
         </form>
     </div>
     <div class="container">
+        <h2>Add Category For Course Notes</h2>
         <form action="/dashboard" method="POST">
             {{ category_form.hidden_tag() }}
             <div class="mb-3">

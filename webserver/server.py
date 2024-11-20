@@ -28,13 +28,11 @@ from webforms import SignUpForm
 from webforms import UploadForm
 from webforms import AddCourseForm
 from webforms import AddCourseCategoryForm
+from webforms import SearchForm
 
 tmpl_dir = os.path.join(os.path.dirname(
     os.path.abspath(__file__)), "templates")
 app = Flask(__name__, template_folder=tmpl_dir)
-
-login_manager = LoginManager()
-login_manager.init_app(app)
 
 # XXX: The Database URI should be in the format of:
 #
@@ -342,11 +340,13 @@ def dashboard():
             if r.pid == None:
                 session["user_uni"] = r.uni
                 form = UploadForm()
+                search_form = SearchForm()
 
                 return render_template(
                     "dashboard.html",
                     error=None,
                     form=form,
+                    search_form=search_form,
                     is_student=True,
                     is_professor=False,
                 )
@@ -372,6 +372,7 @@ def dashboard():
         for r in result:
             if r.pid == None:
                 form = UploadForm()
+                search_form = SearchForm()
                 print("Link that was saved:")
                 # print(form.file_link.data)
 
@@ -391,9 +392,40 @@ def dashboard():
                         "dashboard.html",
                         error=None,
                         form=form,
+                        search_form=search_form,
                         is_student=True,
                         is_professor=False,
                     )
+
+                if search_form.validate_on_submit():
+                    notes = []
+                    notes_query = g.conn.execute(
+                        text("""SELECT * FROM uploads"""))
+                    for result in notes_query:
+                        # can also be accessed using result[0]
+                        notes.append(result[0])
+                    cursor.close()
+                    context = dict(data=notes)
+
+                    uploads = metaData.tables["uploads"]
+                    up_query = uploads.select().where(uploads.c.note_id >= 0)
+                    result = g.conn.execute(up_query)
+
+                    notes = []
+                    for r in result:
+                        data = [r.note_id, r.content, r.upload_date, r.upvotes]
+                        notes.append(data)
+
+                    return render_template(
+                        "dashboard.html",
+                        error=None,
+                        form=form,
+                        search_form=search_form,
+                        is_student=True,
+                        is_professor=False,
+                        notes=notes,
+                    )
+
             elif r.sid == None:
                 form = AddCourseForm()
                 cat_form = AddCourseCategoryForm()

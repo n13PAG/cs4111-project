@@ -61,7 +61,8 @@ class UploadForm(FlaskForm):
     submit = SubmitField("Submit")
 
 
-# class SearchForm(FlaskForm):
+class SearchForm(FlaskForm):
+    submit = SubmitField("Search")
 
 
 class MDForm(FlaskForm):
