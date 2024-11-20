@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h1>Student Dashboard</h1>
+<form action="/stud_dashboard" method="POST">
+    {{ form.hidden_tag() }}
+    <div class="mb-3">
+        {{ form.file_link.label(class="form-label") }}
+        {{ form.file_link(class="form-control") }}
+    </div>            
+    <br/>
+    {{ form.submit(class="btn btn-primary") }}
+</form>
+
+{% endblock %}

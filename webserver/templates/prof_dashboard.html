@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h1>Professor Dashboard</h1>
+<form action="/prof_dashboard" method="POST">
+    {{ form.hidden_tag() }}
+    <div class="mb-3">
+        {{ form.cid.label(class="form-label") }}
+        {{ form.cid(class="form-control") }}
+    </div>
+    <div class="mb-3">
+        {{ form.course_name.label(class="form-label") }}
+        {{ form.course_name(class="form-control") }}
+    </div>    
+    <div class="mb-3">
+        {{ form.semester.label(class="form-label") }}
+        {{ form.semester(class="form-control") }}
+    </div>    
+    <div class="mb-3">
+        {{ form.year.label(class="form-label") }}
+        {{ form.year(class="form-control") }}
+    </div>   
+    <br/>
+    {{ form.submit(class="btn btn-primary") }}
+</form>
+
+{% endblock %}

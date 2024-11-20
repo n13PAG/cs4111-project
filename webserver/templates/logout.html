@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+    <div class="container px-4 px-lg-5 text-center">
+        <h3>User Logged Out</h3>
+        <a class="btn btn-primary btn-lg" href="{{url_for('login')}}" class="button">Login</a>
+        <a class="btn btn-primary btn-lg" href="{{url_for('home')}}" class="button">Home</a>
+        
+    </div>
+
+
+{% endblock %}
