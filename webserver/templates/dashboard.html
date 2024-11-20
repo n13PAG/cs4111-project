@@ -15,27 +15,59 @@
     </form>
 {% endif %}
 {% if is_professor %}
+    {% if error %}
+    <div class="alert alert-warning" role="alert">{{ error }}</div>
+    {% endif %}
     <h1>Professor Dashboard</h1>
-    <form action="/dashboard" method="POST">
-        {{ form.hidden_tag() }}
-        <div class="mb-3">
-            {{ form.cid.label(class="form-label") }}
-            {{ form.cid(class="form-control") }}
-        </div>
-        <div class="mb-3">
-            {{ form.course_name.label(class="form-label") }}
-            {{ form.course_name(class="form-control") }}
-        </div>    
-        <div class="mb-3">
-            {{ form.semester.label(class="form-label") }}
-            {{ form.semester(class="form-control") }}
-        </div>    
-        <div class="mb-3">
-            {{ form.year.label(class="form-label") }}
-            {{ form.year(class="form-control") }}
-        </div>   
-        <br/>
-        {{ form.submit(class="btn btn-primary") }}
-    </form>
+    <div class="container">
+        <form action="/dashboard" method="POST">
+            {{ form.hidden_tag() }}
+            <div class="mb-3">
+                {{ form.cid.label(class="form-label") }}
+                {{ form.cid(class="form-control") }}
+            </div>
+            <div class="mb-3">
+                {{ form.course_name.label(class="form-label") }}
+                {{ form.course_name(class="form-control") }}
+            </div>    
+            <div class="mb-3">
+                {{ form.semester.label(class="form-label") }}
+                {{ form.semester(class="form-control") }}
+            </div>    
+            <div class="mb-3">
+                {{ form.year.label(class="form-label") }}
+                {{ form.year(class="form-control") }}
+            </div>   
+            <br/>
+            {{ form.submit(class="btn btn-primary") }}
+        </form>
+    </div>
+    <div class="container">
+        <form action="/dashboard" method="POST">
+            {{ category_form.hidden_tag() }}
+            <div class="mb-3">
+                {{ category_form.cid.label(class="form-label") }}
+                {{ category_form.cid(class="form-control") }}
+            </div>
+            <div class="mb-3">
+                {{ category_form.course_name.label(class="form-label") }}
+                {{ category_form.course_name(class="form-control") }}
+            </div>    
+            <div class="mb-3">
+                {{ category_form.category_name.label(class="form-label") }}
+                {{ category_form.category_name(class="form-control") }}
+            </div>    
+            <div class="mb-3">
+                {{ category_form.category_description.label(class="form-label") }}
+                {{ category_form.category_description(class="form-control") }}
+            </div>   
+            <br/>
+            {{ category_form.submit(class="btn btn-primary") }}
+        </form>
+    </div>
+    <div class="container">
+        <a class="btn btn-primary btn-lg" href="{{url_for('logout')}}" class="button">Logout</a>
+    </div>
+
 {% endif %}
 {% endblock %}

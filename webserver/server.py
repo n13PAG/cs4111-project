@@ -27,11 +27,14 @@ from webforms import UserLoginForm
 from webforms import SignUpForm
 from webforms import UploadForm
 from webforms import AddCourseForm
+from webforms import AddCourseCategoryForm
 
 tmpl_dir = os.path.join(os.path.dirname(
     os.path.abspath(__file__)), "templates")
 app = Flask(__name__, template_folder=tmpl_dir)
 
+login_manager = LoginManager()
+login_manager.init_app(app)
 
 # XXX: The Database URI should be in the format of:
 #
@@ -200,7 +203,7 @@ def signup():
             check_result = g.conn.execute(check_query)
 
             if check_result.rowcount > 0:
-                error = "User taken. Please enter new ."
+                error = "User already exists."
                 return render_template("signup.html", error=error, form=form)
             else:
                 u_pid = null
@@ -240,9 +243,19 @@ def signup():
                 # get table
                 repos_table = metaData.tables["repos_owned"]
 
+                rids = []
+                cursor = g.conn.execute(
+                    text("""SELECT MAX(rid) From repos_owned"""))
+                for result in cursor:
+                    # can also be accessed using result[0]
+                    rids.append(result[0])
+                cursor.close()
+                max_id = rids[0]
+                next_id = int(max_id) + 1
+
                 # Create personal repo
                 query = insert(repos_table).values(
-                    rid=0,
+                    rid=next_id,
                     total_note_num=0,
                     p_note_num=0,
                     np_note_num=0,
@@ -255,7 +268,7 @@ def signup():
 
                 # Create external(liked notes repo)
                 query = insert(repos_table).values(
-                    rid=1,
+                    rid=next_id + 1,
                     total_note_num=0,
                     p_note_num=0,
                     np_note_num=0,
@@ -266,12 +279,13 @@ def signup():
                 result = g.conn.execute(query)
                 g.conn.commit()
 
-            flash('Account Created')
+            flash("Account Created")
             return redirect(url_for("login"))
         else:
             error = "Invalid Input. Please try again."
 
     return render_template("signup.html", error=error, form=form)
+
 
 #
 # This is an example of a different path.  You can see it at
@@ -300,6 +314,24 @@ def dashboard():
     cursor.close()
     print(notes)
 
+    courses = []
+    cursor = g.conn.execute(text("""SELECT * FROM courses"""))
+    for result in cursor:
+        # can also be accessed using result[0]
+        courses.append(result[0])
+    cursor.close()
+    print(courses)
+
+    course_cat = []
+    cursor = g.conn.execute(
+        text("""SELECT (name_, description, cid) FROM Categories_Held""")
+    )
+    for result in cursor:
+        # can also be accessed using result[0]
+        course_cat.append(result[0])
+    cursor.close()
+    print(course_cat)
+
     if request.method == "GET":
         user = request.args["user"]
         user_table = metaData.tables["users"]
@@ -311,29 +343,24 @@ def dashboard():
                 session["user_uni"] = r.uni
                 form = UploadForm()
 
-                # if form.validate_on_submit():
-                #   u_sid = r.sid
-                #   text = form.file_link.data
-                #   print(u_sid)
-                #   print(text)
-                #   uploads_table = metaData.tables['uploads']
-                #   uploads_query = insert(uploads_table).values(sid=u_sid, content=text, upvotes = 0, upload_date = None )
-                #   result = g.conn.execute(uploads_query)
-                #   g.conn.commit()
-
-                #   print(select(uploads_table))
-                # result = g.conn.execute(uploads_query)
-                # for u in result:
-                #   print(u)
-
                 return render_template(
-                    "dashboard.html", form=form, is_student=True, is_professor=False
+                    "dashboard.html",
+                    error=None,
+                    form=form,
+                    is_student=True,
+                    is_professor=False,
                 )
             elif r.sid == None:
                 session["user_uni"] = r.uni
                 form = AddCourseForm()
+                category_form = AddCourseCategoryForm()
                 return render_template(
-                    "dashboard.html", form=form, is_student=False, is_professor=True
+                    "dashboard.html",
+                    error=None,
+                    form=form,
+                    category_form=category_form,
+                    is_student=False,
+                    is_professor=True,
                 )
 
     elif request.method == "POST":
@@ -361,101 +388,115 @@ def dashboard():
                     g.conn.commit()
 
                     return render_template(
-                        "dashboard.html", form=form, is_student=True, is_professor=False
+                        "dashboard.html",
+                        error=None,
+                        form=form,
+                        is_student=True,
+                        is_professor=False,
                     )
             elif r.sid == None:
                 form = AddCourseForm()
-                return render_template(
-                    "dashboard.html", form=form, is_student=False, is_professor=True
-                )
+                cat_form = AddCourseCategoryForm()
 
-        # if r.sid == None:
-        # return redirect(url_for('prof_dashboard', user = r, is_student = False, is_professor = True))
-    #     form = None
-    #     return render_template('dashboard.html', form = form, is_student = False, is_professor = True)
-    #   elif r.pid == None:
-    #     print(r.sid)
-    #     form = UploadForm()
-    #     # print(form.file_link.data)
-    #     # if request.method == 'POST':
-    #       # if form.validate_on_submit():
-    #         # u_sid = r.sid
-    #         # text = form.file_link.data
-    #         # print(u_sid)
-    #         # print(text)
-    #         # uploads_table = metaData.tables['uploads']
-    #         # uploads_query = insert(uploads_table).values(sid=u_sid, content=text, upvotes = 0, upload_date = None )
-    #         # result = g.conn.execute(uploads_query)
-    #         # g.conn.commit()
+                course_table = metaData.tables["courses"]
+                courses_created_table = metaData.tables["course_created"]
+                categories_table = metaData.tables["categories_held"]
+                belongs_table = metaData.tables["belongs"]
 
-    #     return render_template('dashboard.html', form = form, is_student = True, is_professor = False)
+                if form.validate_on_submit():
+                    u_pid = r.pid
+                    cid = form.cid.data
+                    course_name = form.course_name.data
+                    semester = form.semester.data
+                    year = form.year.data
 
-    # return redirect(url_for('stud_dashboard', student_user = r))
+                    check_query = course_table.select().where(course_table.c.cid == cid)
+                    check_result = g.conn.execute(check_query)
 
+                    if check_result.rowcount > 0:
+                        error = "Course already exists."
+                        return render_template(
+                            "dashboard.html",
+                            error=error,
+                            form=form,
+                            student=False,
+                            is_professor=True,
+                        )
+                    else:
+                        query = insert(course_table).values(
+                            cid=cid, name=course_name, semester=semester, year=year
+                        )
+                        result = g.conn.execute(query)
+                        g.conn.commit()
+
+                        query = insert(courses_created_table).values(
+                            pid=u_pid, cid=cid)
+                        result = g.conn.execute(query)
+                        g.conn.commit()
+
+                        courses = []
+                        cursor = g.conn.execute(
+                            text("""SELECT * FROM courses"""))
+                        for result in cursor:
+                            # can also be accessed using result[0]
+                            courses.append(result[0])
+                        cursor.close()
+                        print(courses)
+
+                if cat_form.validate_on_submit():
+                    cid = cat_form.cid.data
+                    course_name = cat_form.course_name.data
+                    category_name = cat_form.category_name.data
+                    category_description = cat_form.category_description.data
+
+                    check_query = course_table.select().where(course_table.c.cid == cid)
+                    check_result = g.conn.execute(check_query)
+
+                    if check_result.rowcount == 0:
+                        error = "Course does not exist. Please enter Course ID for existing course."
+                        return render_template(
+                            "dashboard.html",
+                            error=error,
+                            form=form,
+                            category_form=cat_form,
+                            student=False,
+                            is_professor=True,
+                        )
+                    else:
+
+                        check_query = categories_table.select().where(
+                            categories_table.c.name_ == category_name
+                        )
+                        check_result = g.conn.execute(check_query)
+
+                        if check_result.rowcount > 0:
+                            error = "Category exists. Please enter new Category."
+                            return render_template(
+                                "dashboard.html",
+                                error=error,
+                                form=form,
+                                category_form=cat_form,
+                                student=False,
+                                is_professor=True,
+                            )
+                        else:
+                            query = insert(categories_table).values(
+                                name_=category_name,
+                                description=category_description,
+                                cid=cid,
+                            )
+                            result = g.conn.execute(query)
+                            g.conn.commit()
+
+                            return render_template(
+                                "dashboard.html",
+                                error=None,
+                                form=form,
+                                category_form=cat_form,
+                                is_student=False,
+                                is_professor=True,
+                            )
     return "text"
-    # if user.sid == None:
-    #   redirect(url_for('prof_dashboard()'))
-    # elif user.pid == None:
-    #   redirect(url_for('stud_dashboard'))
-
-
-# professordashboard
-# @app.route('/prof_dashboard', methods=['GET','POST'])
-# def prof_dashboard():
-#   form = AddCourseForm()
-
-#   if request.method == 'POST':
-#     if form.validate_on_submit():
-#       user = request.args['user']
-#       cid = form.cid.data
-#       course_name = form.course_name.data
-#       semester = form.semester.data
-#       year = form.year.data
-
-#       # cursor = g.conn.execute(text("""SELECT MAX(note_id) FROM courses"""))
-
-#       courses_table = metaData.tables['courses']
-#       query = insert(courses_table).values(cid=cid, name=course_name, semester=semester, year=year)
-#       result = g.conn.execute(query)
-#       g.conn.commit()
-
-#       courses_created_table = metaData.tables['course_created']
-#       query = insert(courses_created_table).values(sid = user.sid, cid=cid)
-#       result = g.conn.execute(query)
-#       g.conn.commit()
-
-#       query = courses_table.select()
-#       result = g.conn.execute(query)
-#       for r in result:
-#         print(r)
-
-#   return render_template('prof_dashboard.html', form = form)
-
-# studentdashboard
-# @app.route('/stud_dashboard', methods=['GET','POST'])
-# def stud_dashboard():
-#   form = UploadForm()
-
-#   if request.method == 'POST':
-#     if form.validate_on_submit():
-#       print(session['test'])
-#       print("Hello")
-# print(student_user)
-# print(request.form['test_var'])
-# for r in request.args:
-#   print(r)
-
-# user = request.args['student_user']
-# u_sid = user.sid
-# text = form.file_link.data
-# print(u_sid)
-#   print(text)
-# uploads_table = metaData.tables['uploads']
-# uploads_query = insert(uploads_table).values(sid=u_sid, content=text, upvotes = 0, upload_date = None )
-# result = g.conn.execute(uploads_query)
-# g.conn.commit()
-
-# return render_template('stud_dashboard.html', form = form)
 
 
 # Example of adding new data to the database
@@ -464,23 +505,6 @@ def add():
     name = request.form["name"]
     print(text(name))
     return redirect("/")
-
-
-# Route for handling the login page logic
-# @app.route('/login', methods=['GET', 'POST'])
-# def login():
-#     error = None
-#     if request.method == 'POST':
-#       user_table = metaData.tables['users']
-#       uni_query = user_table.select().where(user_table.c.uni == request.form['uni'])
-#       result = g.conn.execute(uni_query)
-#       uni = result.fetchone()
-#       #if no row, then no uni exists as a user
-#       if result.rowcount == 0:
-#         error = 'Invalid Credentials. Please try again.'
-#       else:
-#         return redirect(url_for('tbd'))
-#     return render_template('login.html', error=error)
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -503,6 +527,12 @@ def login():
             error = "Invalid Input. Please try again."
 
     return render_template("login.html", form=form, error=error)
+
+
+@app.route("/logout")
+def logout():
+    session.pop("user_uni")
+    return render_template("logout.html")
 
 
 # Custom error pages
