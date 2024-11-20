@@ -390,6 +390,21 @@ def dashboard():
         for r in result:
             if r.pid == None:
 
+                # # get the repositories
+                # repos_table = metaData.tables["repos_owned"]
+                # repos_query = repos_table.select().where(repos_table.c.sid==r.sid)
+                # result = g.conn.execute(repos_query)
+
+                # personal_repo = []
+                # external_repo = []
+                # for r in result:
+                #     if r.nprid == None:
+                #         # personal repo
+                #         personal_repo = r
+                #     elif r.prid == None:
+                #         # external repo
+                #         external_repo = r
+
                 course_form = SelectCourseForm()
                 search_form = SearchForm()
 
@@ -737,6 +752,35 @@ def internal_server_error(e):
     return render_template("500.html"), 500
 
 
+@ app.route("/display_tables")
+def debug_display():
+    table_names = []
+    table_names.append("users")
+    table_names.append("courses")
+    table_names.append("course_created")
+    table_names.append("categories_held")
+    table_names.append("student_enrolled")
+    table_names.append("belongs")
+    table_names.append("uploads")
+    table_names.append("repos_owned")
+    table_names.append("note_contained")
+    table_names.append("student_likes")
+
+    table_col_names = []
+    for name in table_names:
+        table_col_names.append(get_column_names(name))
+
+    tables_dict = []
+    for name in table_names:
+        tables_dict.append(
+            [name, get_column_names(name), get_table_data(name)])
+
+    return render_template(
+        "debug.html",
+        tables_dict=tables_dict
+    )
+
+
 def get_courses():
     courses = []
     cursor = g.conn.execute(text("""SELECT * FROM courses"""))
@@ -766,6 +810,49 @@ def get_next_id(table_name, col_name):
     cursor.close()
     max_id = uids[0]
     return int(max_id) + 1
+
+
+def get_table_data(table_name):
+    data = []
+    for row in g.conn.execute(text("""SELECT * FROM """ + str(table_name))):
+        col_data = []
+        for c in row:
+            col_data.append(c)
+        data.append(col_data)
+    return data
+
+
+def get_table_data_dict(table_name):
+    data = []
+    result = g.conn.execute(text("""SELECT * FROM """ + str(table_name)))
+    keys = result.keys()
+    col_names = []
+    for key in keys:
+        col_names.append(key)
+    for row in g.conn.execute(text("""SELECT * FROM """ + str(table_name))):
+        col_data = []
+        index = 0
+        for c in row:
+            col_data.append([col_names[index], c])
+            index += 1
+        data.append(col_data)
+    return data
+
+
+def get_column_names(table_name):
+    result = g.conn.execute(text("""SELECT * FROM """ + str(table_name)))
+    col_names = []
+    for col in result.keys():
+        col_names.append(col)
+    return col_names
+
+
+def get_all_table_names():
+    names = []
+    keys = metaData.tables.keys()
+    for key in keys:
+        names.append(key)
+    return names
 
 
 if __name__ == "__main__":

@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% for entry in tables_dict %}
+    <div class="card">
+        <table class="table">
+            <thead>
+                {% for col in entry[1] %}
+                <th>{{ col }}</th>
+                {% endfor %}
+            </thead>
+            <tbody>
+                {% for row in entry[2] %}
+                <tr>
+                    {% for cell in row %}
+                    <td>{{ cell }}</td>
+                    {% endfor %}
+                </tr>
+            </tbody>
+            {% endfor %}
+            <h2>{{ entry[0] }}</h2>
+{% endfor %}
+{% endblock %}
