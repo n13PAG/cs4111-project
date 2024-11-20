@@ -22,6 +22,7 @@ from sqlalchemy.pool import NullPool
 from flask import Flask, request, render_template, g, redirect, Response, url_for, flash
 from flask import session
 from sqlalchemy import text
+from datetime import datetime
 from flask_login import UserMixin, LoginManager
 from webforms import UserLoginForm
 from webforms import SignUpForm
@@ -29,6 +30,7 @@ from webforms import UploadForm
 from webforms import AddCourseForm
 from webforms import AddCourseCategoryForm
 from webforms import SearchForm
+from webforms import SelectCourseForm
 
 tmpl_dir = os.path.join(os.path.dirname(
     os.path.abspath(__file__)), "templates")
@@ -61,6 +63,9 @@ engine.connect()
 metaData = MetaData()
 metaData.reflect(bind=engine)
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "for dev")
+app.config.update(
+    PERMANENT_SESSION_LIFETIME=600
+)
 
 
 @app.before_request
@@ -339,7 +344,9 @@ def dashboard():
         for r in result:
             if r.pid == None:
                 session["user_uni"] = r.uni
-                form = UploadForm()
+                session["user_sid"] = r.sid
+
+                course_form = SelectCourseForm()
                 search_form = SearchForm()
 
                 courses = []
@@ -351,12 +358,12 @@ def dashboard():
                 cursor.close()
 
                 search_form.course_name.choices = course_names
-                form.course_name.choices = course_names
+                course_form.course_name.choices = course_names
 
                 return render_template(
                     "dashboard.html",
                     error=None,
-                    form=form,
+                    course_form=course_form,
                     search_form=search_form,
                     is_student=True,
                     is_professor=False,
@@ -382,11 +389,11 @@ def dashboard():
 
         for r in result:
             if r.pid == None:
-                form = UploadForm()
 
+                course_form = SelectCourseForm()
                 search_form = SearchForm()
 
-                upload_course_name = form.course_name.data
+                select_course_name = course_form.course_name.data
                 course_name = search_form.course_name.data
 
                 courses = []
@@ -398,82 +405,52 @@ def dashboard():
                 cursor.close()
 
                 search_form.course_name.choices = course_names
-                form.course_name.choices = course_names
-
-                print("Link that was saved:")
-                # print(form.file_link.data)
-                # course_cat = []
-                # cursor = g.conn.execute(text("""SELECT From users"""))
-                # for result in cursor:
-                #     # can also be accessed using result[0]
-                #     names.append(result[0])
-                #     cursor.close()
-                # print(names[0])
-                if form.validate_on_submit():
-                    u_sid = r.sid
-                    text = form.file_link.data
-                    # print(u_sid)
-                    # print(text)
-                    uploads_table = metaData.tables["uploads"]
-                    belongs_table = metaData.tables["belongs"]
-
-                    uploads_query = insert(uploads_table).values(
-                        sid=u_sid, content=text, upvotes=0, upload_date=None
-                    )
-                    result = g.conn.execute(uploads_query)
-                    g.conn.commit()
-
-                    note_id = get_next_id("""uploads""", """note_id""")
-
-                    notes = []
-                    cursor = g.conn.execute(
-                        text("""SELECT (note_id,conten) FROM uploads""")
-                    )
-                    for result in cursor:
-                        # can also be accessed using result[0]
-                        notes.append(result[0])
-                    cursor.close()
-                    print(notes)
-
-                    #
-                    #    sid=u_sid, content=text, upvotes=0, upload_date=None
-                    # )
-                    # result = g.conn.execute(uploads_query)
-                    # g.conn.commit()
-
-                    return render_template(
-                        "dashboard.html",
-                        error=None,
-                        form=form,
-                        search_form=search_form,
-                        is_student=True,
-                        is_professor=False,
-                    )
+                course_form.course_name.choices = course_names
 
                 if search_form.validate_on_submit():
                     course_name = search_form.course_name.data
                     # professor_name = search_form.professor_name.data
                     # category_name = search_form.category_name.data
+                    course_table = metaData.tables["courses"]
                     cid_query = course_table.select().where(course_table.c.name == course_name)
                     cid_result = g.conn.execute(cid_query)
                     for r in cid_result:
                         cid = r.cid
-                    categories_list = []
-                    cursor = g.conn.execute(text(
-                        """SELECT (category_id, name_) FROM Categories_Held WHERE Categories_Held.cid == """ + cid + """"" """))
-                    for result in cursor:
-                        # can also be accessed using result[0]
-                        categories_list.append(result[0])
-                    cursor.close()
+
+                    # categories_list = []
+                    # cursor = g.conn.execute(text(
+                    #     """SELECT (category_id, name_) FROM Categories_Held WHERE Categories_Held.cid == """ + cid))
+                    # for result in cursor:
+                    #     # can also be accessed using result[0]
+                    #     categories_list.append(result[0])
+                    # cursor.close()
 
                     return render_template(
                         "dashboard.html",
                         error=None,
-                        form=form,
+                        course_form=course_form,
                         search_form=search_form,
                         is_student=True,
                         is_professor=False,
                     )
+
+                # if course_form.validate_on_submit():
+                #     course_name = course_form.course_name.data
+                #     cid_query = course_table.select().where(course_table.c.name == course_name)
+                #     cid_result = g.conn.execute(cid_query)
+                #     cid = -1
+                #     for r in cid_result:
+                #         cid = r.cid
+
+                #     # set session data
+                #     session["cid"] = cid
+                #     session["course_name"] = course_name
+                #     session["user_sid"] = r.sid
+                #     session.modified = True
+
+                #     print("/n/nAttempt Redirect")
+
+                #     return redirect(url_for("dashboard/upload"))
 
             elif r.sid == None:
                 form = AddCourseForm()
@@ -596,50 +573,57 @@ def dashboard():
     return "text"
 
 
-@app.route("/upload", methods=["GET", "POST"])
+@app.route("/dashboard/upload", methods=["GET", "POST"])
 def upload():
-
     if request.method == "GET":
-        # course_table = metaData.tables["courses"]
-        # course_query = course_table.select().where(course_table.c.cid == cid)
-
-        form = UploadForm()
-
-        category_names = []
-        cursor = g.conn.execute(
-            text("""SELECT (name_) FROM categories_held"""))
-        for result in cursor:
-            # can also be accessed using result[0]
-            category_names.append(result[0])
-        cursor.close()
-
-        form.category_name.choices = category_names
 
         return render_template(
             "upload.html",
             error=None,
-            form=form
+            form=form,
+            course_name=course_name
         )
     elif request.method == "POST":
-        sid = session['user_sid']
-        cid = session['cid']
-        course_name = session['course_name']
+
+        # get cid
+        course_table = metaData.tables["courses"]
+        course_name = request.form['course_name']
+        cid_query = course_table.select().where(course_table.c.name == course_name)
+        cid_result = g.conn.execute(cid_query)
+        cid = -1
+        for r in cid_result:
+            cid = r.cid
+
+        # set session variables
+        session["cid"] = cid
+        session["course_name"] = course_name
+
+        # Get session variables
+        sid = session["user_sid"]
+        cid = session["cid"]
+        course_name = session["course_name"]
 
         form = UploadForm()
 
+        # get categories held in course using cid
+        from sqlalchemy import text
         category_names = []
         cursor = g.conn.execute(
-            text("""SELECT (name_) FROM categories_held"""))
+            text("""SELECT (name_) FROM categories_held WHERE cid=""" + str(cid)))
         for result in cursor:
             # can also be accessed using result[0]
             category_names.append(result[0])
         cursor.close()
 
+        # set form selection to category names
         form.category_name.choices = category_names
 
         if form.validate_on_submit():
             text = form.file_link.data
             category_name = form.category_name.data
+            date = datetime.now()
+
+            # get category id
             categories_held = metaData.tables["categories_held"]
             cat_query = categories_held.select().where(
                 categories_held.c.name_ == category_name)
@@ -647,21 +631,73 @@ def upload():
 
             category_id = 0
             for r in result:
-                category_id =
+                category_id = r.category_id
+
+            # insert note into uploads table
+            uploads_table = metaData.tables["uploads"]
+            uploads_query = insert(uploads_table).values(
+                sid=sid, content=text, upvotes=0, upload_date=date
+            )
+            result = g.conn.execute(uploads_query)
+            g.conn.commit()
+
+            # get note id of note that just got added
+            note_id = get_next_id("""uploads""", """note_id""")
+
+            # insert note into belongs table
+            belongs_table = metaData.tables["belongs"]
+            belongs_query = insert(belongs_table).values(
+                note_id=note_id, category_id=category_id)
+            result = g.conn.execute(belongs_query)
+            g.conn.commit()
+
+            # get rid of personal repo using sid
+            repos_owned_table = metaData.tables["repos_owned"]
+            repos_query = repos_owned_table.select().where(repos_owned_table.c.sid == sid)
+            result = g.conn.execute(repos_query)
+
+            # TODO: Add check for when there is no repo
+            rid = -1
+            for r in result:
+                if r.nprid == None:
+                    rid = r.rid
+
+            # add note to notes contained table
+            note_contained_table = metaData.tables["note_contained"]
+            note_contained_query = insert(note_contained_table).values(
+                note_id=note_id, rid=rid, content=text, upvotes=0, upload=date)
+            result = g.conn.execute(note_contained_query)
+            g.conn.commit()
+
+            return render_template(
+                "upload.html",
+                error=None,
+                form=form,
+                course_name=course_name
+            )
+
+        else:
+            return render_template(
+                "upload.html",
+                error=None,
+                form=form,
+                course_name=course_name
+            )
 
 
 # Example of adding new data to the database
-@app.route("/add", methods=["POST"])
+@ app.route("/add", methods=["POST"])
 def add():
     name = request.form["name"]
     print(text(name))
     return redirect("/")
 
 
-@app.route("/login", methods=["GET", "POST"])
+@ app.route("/login", methods=["GET", "POST"])
 def login():
     form = UserLoginForm()
     error = None
+
     if request.method == "POST":
         # Validation
         if form.validate_on_submit():
@@ -673,6 +709,10 @@ def login():
             if result.rowcount == 0:
                 error = "Invalid Credentials. Please try again."
             else:
+                session.clear()
+                session['logged_in'] = True
+                session['user_uni'] = form.uni.data
+                session.permanent = True
                 return redirect(url_for("dashboard", user=form.uni.data))
         else:
             error = "Invalid Input. Please try again."
@@ -680,19 +720,19 @@ def login():
     return render_template("login.html", form=form, error=error)
 
 
-@app.route("/logout")
+@ app.route("/logout")
 def logout():
-    session.pop("user_uni")
+    session.clear()
     return render_template("logout.html")
 
 
 # Custom error pages
-@app.errorhandler(404)
+@ app.errorhandler(404)
 def page_not_found(e):
     return render_template("404.html"), 404
 
 
-@app.errorhandler(500)
+@ app.errorhandler(500)
 def internal_server_error(e):
     return render_template("500.html"), 500
 
@@ -731,11 +771,11 @@ def get_next_id(table_name, col_name):
 if __name__ == "__main__":
     import click
 
-    @click.command()
-    @click.option("--debug", is_flag=True)
-    @click.option("--threaded", is_flag=True)
-    @click.argument("HOST", default="0.0.0.0")
-    @click.argument("PORT", default=8111, type=int)
+    @ click.command()
+    @ click.option("--debug", is_flag=True)
+    @ click.option("--threaded", is_flag=True)
+    @ click.argument("HOST", default="0.0.0.0")
+    @ click.argument("PORT", default=8111, type=int)
     def run(debug, threaded, host, port):
         """
         This function handles command line parameters.

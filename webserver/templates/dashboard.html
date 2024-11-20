@@ -4,15 +4,19 @@
 
 {% if is_student %}
     <h1>Student Dashboard</h1>
-    <form action="/dashboard" method="POST">
-        {{ form.hidden_tag() }}
+    <div class="container">
+    <h2>Upload Note for Course</h2>
+    <h3>Select Course</h3>
+    <form action="/dashboard/upload" method="POST">
+        {{ course_form.hidden_tag() }}
         <div class="mb-3">
-            {{ form.file_link.label(class="form-label") }}
-            {{ form.file_link(class="form-control") }}
+            {{ course_form.course_name.label(class="form-label") }}
+            {{ course_form.course_name(class="form-control") }}
         </div>            
         <br/>
-        {{ form.submit(class="btn btn-primary") }}
+        {{ course_form.submit(class="btn btn-primary") }}
     </form>
+    </div>
 {% endif %}
 {% if is_professor %}
     {% if error %}
@@ -20,6 +24,7 @@
     {% endif %}
     <h1>Professor Dashboard</h1>
     <div class="container">
+        <h2>Add Course</h2>
         <form action="/dashboard" method="POST">
             {{ form.hidden_tag() }}
             <div class="mb-3">
@@ -43,6 +48,7 @@
         </form>
     </div>
     <div class="container">
+        <h2>Add Category For Course</h2>
         <form action="/dashboard" method="POST">
             {{ category_form.hidden_tag() }}
             <div class="mb-3">

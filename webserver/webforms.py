@@ -56,12 +56,20 @@ class AddCourseCategoryForm(FlaskForm):
     submit = SubmitField("Submit")
 
 
+class SelectCourseForm(FlaskForm):
+    course_name = SelectField("Course Name", [validators.DataRequired()])
+    submit = SubmitField("Select Course")
+
+
 class UploadForm(FlaskForm):
     file_link = StringField("PDF link", [validators.DataRequired()])
-    submit = SubmitField("Submit")
+    category_name = SelectField("Category Name", [validators.DataRequired()])
+    submit = SubmitField("Upload")
 
 
-# class SearchForm(FlaskForm):
+class SearchForm(FlaskForm):
+    course_name = SelectField("Course Name", [validators.DataRequired()])
+    submit = SubmitField("Search")
 
 
 class MDForm(FlaskForm):
