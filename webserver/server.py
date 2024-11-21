@@ -63,9 +63,7 @@ engine.connect()
 metaData = MetaData()
 metaData.reflect(bind=engine)
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "for dev")
-app.config.update(
-    PERMANENT_SESSION_LIFETIME=600
-)
+app.config.update(PERMANENT_SESSION_LIFETIME=600)
 
 
 @app.before_request
@@ -195,8 +193,8 @@ def signup():
             u_name = form.name.data
             is_student = form.is_student.data
 
-            # get num section from uni
-            u_id = int(u_uni[len(u_uni) - 4:])
+            # # get num section from uni
+            # u_id = int(u_uni[len(u_uni) - 4:])
 
             # get user table
             user_table = metaData.tables["users"]
@@ -215,9 +213,10 @@ def signup():
                 # set pid or sid based on user type
                 if is_student:
                     u_pid = None
-                    u_sid = u_id
+
+                    u_sid = get_next_id("users", "sid")
                 else:
-                    u_pid = u_id
+                    u_pid = get_next_id("users", "pid")
                     u_sid = None
 
                 uids = []
@@ -264,7 +263,7 @@ def signup():
                     np_note_num=0,
                     sid=u_sid,
                     nprid=None,
-                    prid=0,
+                    prid=next_id + 1,
                 )
                 result = g.conn.execute(query)
                 g.conn.commit()
@@ -276,7 +275,7 @@ def signup():
                     p_note_num=0,
                     np_note_num=0,
                     sid=u_sid,
-                    nprid=0,
+                    nprid=next_id + 2,
                     prid=None,
                 )
                 result = g.conn.execute(query)
@@ -409,91 +408,117 @@ def dashboard():
                 course_form = SelectCourseForm()
                 search_form = SearchForm()
 
-                select_course_name = course_form.course_name.data
-                course_name = search_form.course_name.data
+                # select_course_name = course_form.course_name.data
+                # course_name = search_form.course_name.data
 
                 courses = []
                 course_names = []
+                course_names_2 = []
                 cursor = g.conn.execute(text("""SELECT (name) FROM courses"""))
                 for result in cursor:
                     # can also be accessed using result[0]
                     course_names.append(result[0])
+                    course_names_2.append(result[0])
                 cursor.close()
 
-                search_form.course_name.choices = course_names
-                course_form.course_name.choices = course_names
+                # search_form.course_name.choices = course_names_2
+                # course_form.course_name.choices = course_names
 
-                if course_form.validate_on_submit():
+                if course_form.select.data and course_form.validate():
                     # get selected course name
                     select_course_name = course_form.course_name.data
 
                     course_table = metaData.tables["courses"]
                     # get cid
                     cid_query = course_table.select().where(
-                        course_table.c.name == select_course_name)
+                        course_table.c.name == select_course_name
+                    )
                     cid_result = g.conn.execute(cid_query)
                     cid = -1
                     for r in cid_result:
                         cid = r.cid
 
-                    return redirect(url_for("upload", course_name=select_course_name, cid=cid, sid=user_sid))
+                    print("\n\nnRedirect!!!\n\n")
 
-                # if course_form.validate_on_submit():
+                    return redirect(
+                        url_for(
+                            "upload",
+                            course_name=select_course_name,
+                            cid=cid,
+                            sid=user_sid,
+                        )
+                    )
 
-                #     # get selected course name
-                #     select_course_name = course_form.course_name.data
-
-                #     # get cid
-                #     cid_query = course_table.select().where(
-                #         course_table.c.name == select_course_name)
-                #     cid_result = g.conn.execute(cid_query)
-                #     cid = -1
-                #     for r in cid_result:
-                #         cid = r.cid
-
-                #     # get categories held in course using cid
-                #     from sqlalchemy import text
-                #     category_names = []
-                #     cursor = g.conn.execute(
-                #         text("""SELECT (name_) FROM categories_held WHERE cid=""" + str(cid)))
-                #     for result in cursor:
-                #         # can also be accessed using result[0]
-                #         category_names.append(result[0])
-                #     cursor.close()
-
-                #     # set session variables
-                #     session["cid"] = cid
-                #     session["course_name"] = select_course_name
-
-                #     upload_form = UploadForm()
-
-                #     # set form selection to category names
-                #     upload_form.category_name.choices = category_names
-
-                #     return render_template(
-                #         "upload.html",
-                #         error=None,
-                #         form=upload_form,
-                #         course_name=select_course_name
-                #     )
-
-                if search_form.validate_on_submit():
+                if search_form.submit.data and search_form.validate():
                     course_name = search_form.course_name.data
                     # professor_name = search_form.professor_name.data
                     # category_name = search_form.category_name.data
+
+                    # get cid
                     course_table = metaData.tables["courses"]
-                    cid_query = course_table.select().where(course_table.c.name == course_name)
+                    cid_query = course_table.select().where(
+                        course_table.c.name == course_name
+                    )
                     cid_result = g.conn.execute(cid_query)
+                    cid = -1
                     for r in cid_result:
                         cid = r.cid
 
-                    # categories_list = []
-                    # cursor = g.conn.execute(text(
-                    #     """SELECT (category_id, name_) FROM Categories_Held WHERE Categories_Held.cid == """ + cid))
-                    # for result in cursor:
-                    #     # can also be accessed using result[0]
-                    #     categories_list.append(result[0])
-                    # cursor.close()
+                    categories_table = metaData.tables["categories_held"]
+
+                    # course_category_join = """
+                    #     WITH course_cat(category_id, category_name, category_description) AS (
+                    #     SELECT courses.cid, categories_held.category_id, categories_held.name_, categories_held.description
+                    #     FROM courses, categories_held
+                    #     WHERE courses.cid = categories_held.cid
+                    #     ),
+                    #     belong_join (note_id, category_id, category_name, category_description) AS (
+                    #         SELECT belongs.note_id, course_cat.category_id, course_cat.category_name, course_cat.category_description
+                    #         FROM course_cat, belongs
+                    #         WHERE course_cat.category_id = belongs.category_id
+                    #     ),
+                    #     uploads_join AS (
+                    #         SELECT *
+                    #         FROM belong_join, uploads
+                    #         WHERE belong_join.note_id = uploads.note_id
+                    #     )
+                    #     SELECT * FROM uploads_join
+
+                    #     """
+
+                    course_category_join = (
+                        """
+                        WITH course_cat(category_id, category_name, category_description) AS (
+                        SELECT categories_held.category_id, categories_held.name_, categories_held.description 
+                        FROM (SELECT * FROM courses WHERE cid = """
+                        + str(cid)
+                        + """) AS select_course, categories_held 
+                        WHERE select_course.cid = categories_held.cid
+                        ),
+                        belong_join (note_id, category_id, category_name, category_description) AS (
+                        SELECT belongs.note_id, course_cat.category_id, course_cat.category_name, course_cat.category_description
+                        FROM course_cat, belongs
+                        WHERE course_cat.category_id = belongs.category_id
+                        ),
+                        uploads_join AS (
+                            SELECT *
+                            FROM belong_join, uploads
+                            WHERE belong_join.note_id = uploads.note_id
+                        )
+                        SELECT * FROM uploads_join 
+        
+                        """
+                    )
+                    cursor = g.conn.execute(text(course_category_join))
+
+                    rows = []
+                    for result in cursor:
+                        # can also be accessed using result[0]
+                        data = []
+                        for r in result:
+                            data.append(r)
+                        rows.append(data)
+                    cursor.close()
 
                     return render_template(
                         "dashboard.html",
@@ -502,7 +527,63 @@ def dashboard():
                         search_form=search_form,
                         is_student=True,
                         is_professor=False,
+                        notes=None,
+                        data=rows,
                     )
+
+                    # get all categories held by the selected course
+                    # cat_query = join(
+                    #     course_table,
+                    #     categories_table,
+                    #     course_table.c.cid == categories_table.c.cid,
+                    # )
+
+                    # cat_query = course_table.join(
+                    #     categories_table, course_table.c.cid == categories_table.c.cid
+                    # )
+
+                    # stmt = select(course_table).select_from(cat_query)
+                    # result = g.conn.execute(stmt)
+
+                    # belongs_table = metaData.tables["belongs"]
+
+                    # get all the notes that belong to each category
+                    # belongs_query = belongs_table.join(
+                    #     result, belongs_table.c.category_id == result.c.category_id
+                    # )
+
+                    # stmt = select(belongs_table).select_from(belongs_query)
+                    # result = g.conn.execute(stmt)
+
+                    # upload_table = metaData.tables["uploads"]
+
+                    # # get all notes where note_id
+                    # uploads_result = upload_table.join(
+                    #     result, upload_table.c.note_id == result.c.note_id
+                    # )
+
+                    # result = g.conn.execute(uploads_result)
+
+                    # user_table = metaData.tables["user"]
+                    # user_result = user_table.join(
+                    #     result, user_table.c.sid == result.c.sid
+                    # )
+
+                    # result = g.conn.execute(user_result)
+
+                    # return result
+                    # notes = []
+                    # for r in user_result:
+                    #     data = [r.content, r.upload_date, r.upvotes, r.name_, r.name]
+                    #     notes.append(data)
+
+                    # categories_list = []
+                    # cursor = g.conn.execute(text(
+                    #     """SELECT (category_id, name_) FROM Categories_Held WHERE Categories_Held.cid == """ + cid))
+                    # for result in cursor:
+                    #     # can also be accessed using result[0]
+                    #     categories_list.append(result[0])
+                    # cursor.close()
 
                 # if course_form.validate_on_submit():
                 #     course_name = course_form.course_name.data
@@ -660,9 +741,11 @@ def upload():
 
         # get categories held in course using cid
         from sqlalchemy import text
+
         category_names = []
         cursor = g.conn.execute(
-            text("""SELECT (name_) FROM categories_held WHERE cid=""" + str(cid)))
+            text("""SELECT (name_) FROM categories_held WHERE cid=""" + str(cid))
+        )
         for result in cursor:
             # can also be accessed using result[0]
             category_names.append(result[0])
@@ -674,10 +757,7 @@ def upload():
         print(session["user_sid"])
 
         return render_template(
-            "upload.html",
-            error=None,
-            form=form,
-            course_name=course_name
+            "upload.html", error=None, form=form, course_name=course_name
         )
     elif request.method == "POST":
 
@@ -703,9 +783,11 @@ def upload():
 
         # get categories held in course using cid
         from sqlalchemy import text
+
         category_names = []
         cursor = g.conn.execute(
-            text("""SELECT (name_) FROM categories_held WHERE cid=""" + str(cid)))
+            text("""SELECT (name_) FROM categories_held WHERE cid=""" + str(cid))
+        )
         for result in cursor:
             # can also be accessed using result[0]
             category_names.append(result[0])
@@ -722,7 +804,8 @@ def upload():
             # get category id
             categories_held = metaData.tables["categories_held"]
             cat_query = categories_held.select().where(
-                categories_held.c.name_ == category_name)
+                categories_held.c.name_ == category_name
+            )
             result = g.conn.execute(cat_query)
 
             category_id = 0
@@ -738,18 +821,21 @@ def upload():
             g.conn.commit()
 
             # get note id of note that just got added
-            note_id = get_next_id("""uploads""", """note_id""")
+            note_id = get_next_id("""uploads""", """note_id""") - 1
 
             # insert note into belongs table
             belongs_table = metaData.tables["belongs"]
             belongs_query = insert(belongs_table).values(
-                note_id=note_id, category_id=category_id)
+                note_id=note_id, category_id=category_id
+            )
             result = g.conn.execute(belongs_query)
             g.conn.commit()
 
             # get rid of personal repo using sid
             repos_owned_table = metaData.tables["repos_owned"]
-            repos_query = repos_owned_table.select().where(repos_owned_table.c.sid == sid)
+            repos_query = repos_owned_table.select().where(
+                repos_owned_table.c.sid == sid
+            )
             result = g.conn.execute(repos_query)
 
             # TODO: Add check for when there is no repo
@@ -758,10 +844,15 @@ def upload():
                 if r.nprid == None:
                     rid = r.rid
 
+            # stmt = (
+            #     update(repos_owned_table).where()
+            # )
+
             # add note to notes contained table
             note_contained_table = metaData.tables["note_contained"]
             note_contained_query = insert(note_contained_table).values(
-                note_id=note_id, rid=rid, content=text, upvotes=0, upload_date=date)
+                note_id=note_id, rid=rid, content=text, upvotes=0, upload_date=date
+            )
             result = g.conn.execute(note_contained_query)
             g.conn.commit()
 
@@ -769,29 +860,23 @@ def upload():
             session["category_name"] = category_name
 
             return render_template(
-                "upload.html",
-                error=None,
-                form=form,
-                course_name=course_name
+                "upload.html", error=None, form=form, course_name=course_name
             )
         else:
             return render_template(
-                "upload.html",
-                error=None,
-                form=form,
-                course_name=course_name
+                "upload.html", error=None, form=form, course_name=course_name
             )
 
 
 # Example of adding new data to the database
-@ app.route("/add", methods=["POST"])
+@app.route("/add", methods=["POST"])
 def add():
     name = request.form["name"]
     print(text(name))
     return redirect("/")
 
 
-@ app.route("/login", methods=["GET", "POST"])
+@app.route("/login", methods=["GET", "POST"])
 def login():
     form = UserLoginForm()
     error = None
@@ -808,8 +893,8 @@ def login():
                 error = "Invalid Credentials. Please try again."
             else:
                 session.clear()
-                session['logged_in'] = True
-                session['user_uni'] = form.uni.data
+                session["logged_in"] = True
+                session["user_uni"] = form.uni.data
                 session.permanent = True
                 return redirect(url_for("dashboard", user=form.uni.data))
         else:
@@ -818,24 +903,24 @@ def login():
     return render_template("login.html", form=form, error=error)
 
 
-@ app.route("/logout")
+@app.route("/logout")
 def logout():
     session.clear()
     return render_template("logout.html")
 
 
 # Custom error pages
-@ app.errorhandler(404)
+@app.errorhandler(404)
 def page_not_found(e):
     return render_template("404.html"), 404
 
 
-@ app.errorhandler(500)
+@app.errorhandler(500)
 def internal_server_error(e):
     return render_template("500.html"), 500
 
 
-@ app.route("/display_tables")
+@app.route("/display_tables")
 def debug_display():
     table_names = []
     table_names.append("users")
@@ -858,10 +943,7 @@ def debug_display():
         tables_dict.append(
             [name, get_column_names(name), get_table_data(name)])
 
-    return render_template(
-        "debug.html",
-        tables_dict=tables_dict
-    )
+    return render_template("debug.html", tables_dict=tables_dict)
 
 
 def get_courses():
@@ -938,14 +1020,24 @@ def get_all_table_names():
     return names
 
 
+# Database helper functions
+def update_note(note_id):
+    note_contained_table = metaData.tables["note_contained"]
+
+
+def upvote_note(sid, note_id):
+    student_likes_table = metaData.tables["student_likes"]
+    notes_contained_table = metaData.tables["note_contained"]
+
+
 if __name__ == "__main__":
     import click
 
-    @ click.command()
-    @ click.option("--debug", is_flag=True)
-    @ click.option("--threaded", is_flag=True)
-    @ click.argument("HOST", default="0.0.0.0")
-    @ click.argument("PORT", default=8111, type=int)
+    @click.command()
+    @click.option("--debug", is_flag=True)
+    @click.option("--threaded", is_flag=True)
+    @click.argument("HOST", default="0.0.0.0")
+    @click.argument("PORT", default=8111, type=int)
     def run(debug, threaded, host, port):
         """
         This function handles command line parameters.

@@ -14,9 +14,37 @@
             {{ course_form.course_name(class="form-control") }}
         </div>            
         <br/>
-        {{ course_form.submit(class="btn btn-primary") }}
+        {{ course_form.select(class="btn btn-primary") }}
     </form>
     </div>
+    <div class="container">
+        <h2>Search Notes</h2>
+        <h3>Select Course</h3>
+        <form action="/dashboard" method="POST">
+            {{ search_form.hidden_tag() }}
+            <div class="mb-3">
+                {{ search_form.course_name.label(class="form-label") }}
+                {{ search_form.course_name(class="form-control") }}
+            </div>            
+            <br/>
+            {{ search_form.submit(class="btn btn-primary") }}
+        </form>
+        </div>
+    {% if data %}
+        <div class="container">
+            <h2>Results</h2>
+            {% for n in data %}
+                <table class="table">
+                    <thead>
+                    </thead>
+                    <tbody>
+                        {% for i in n %}
+                        <td>{{ i }}</td>
+                        {% endfor %}
+                    </tbody>
+            {% endfor %}
+        </div>
+    {% endif %}
 {% endif %}
 {% if is_professor %}
     {% if error %}

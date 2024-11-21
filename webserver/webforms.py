@@ -57,8 +57,8 @@ class AddCourseCategoryForm(FlaskForm):
 
 
 class SelectCourseForm(FlaskForm):
-    course_name = SelectField("Course Name", [validators.DataRequired()])
-    submit = SubmitField("Select Course")
+    course_name = StringField("Course Name", [validators.DataRequired()])
+    select = SubmitField("Select Course")
 
 
 class UploadForm(FlaskForm):
@@ -68,7 +68,7 @@ class UploadForm(FlaskForm):
 
 
 class SearchForm(FlaskForm):
-    course_name = SelectField("Course Name", [validators.DataRequired()])
+    course_name = StringField("Course Name", [validators.DataRequired()])
     submit = SubmitField("Search")
 
 
