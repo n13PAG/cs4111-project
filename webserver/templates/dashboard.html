@@ -5,17 +5,43 @@
 {% if is_student %}
     <h1>Student Dashboard</h1>
     <div class="container">
-    <h2>Upload Note for Course</h2>
-    <h3>Select Course</h3>
-    <form action="/dashboard" method="POST">
-        {{ course_form.hidden_tag() }}
-        <div class="mb-3">
-            {{ course_form.course_name.label(class="form-label") }}
-            {{ course_form.course_name(class="form-control") }}
-        </div>            
-        <br/>
-        {{ course_form.select(class="btn btn-primary") }}
-    </form>
+        <h2>Upload Note for Course</h2>
+        <h3>Select Course</h3>
+        <form action="/dashboard" method="POST">
+            {{ course_form.hidden_tag() }}
+            <div class="mb-3">
+                {{ course_form.course_name.label(class="form-label") }}
+                {{ course_form.course_name(class="form-control") }}
+            </div>            
+            <br/>
+            {{ course_form.select(class="btn btn-primary") }}
+        </form>
+    </div>
+    <div class="container">
+        <h2>Enroll</h2>
+        <h4>Add Courses you are enrolled in</h4>
+        <form action="/dashboard" method="POST">
+            {{ enroll_form.hidden_tag() }}
+            <div class="mb-3">
+                {{ enroll_form.course_name.label(class="form-label") }}
+                {{ enroll_form.course_name(class="form-control") }}
+            </div>            
+            <br/>
+            {{ enroll_form.enroll_btn(class="btn btn-primary") }}
+        </form>
+    </div>
+    <div class="container">
+        <h2>Upvote Note</h2>
+        <h4>Input the ID of a note you want to upvote</h4>
+        <form action="/dashboard" method="POST">
+            {{ upvote_form.hidden_tag() }}
+            <div class="mb-3">
+                {{ upvote_form.note_id.label(class="form-label") }}
+                {{ upvote_form.note_id(class="form-control") }}
+            </div>            
+            <br/>
+            {{ upvote_form.upvote_btn(class="btn btn-primary") }}
+        </form>
     </div>
     <div class="container">
         <h2>Search Notes</h2>
@@ -34,6 +60,19 @@
         <div class="container">
             <h2>Results</h2>
             {% for n in data %}
+            <form action="/dashboard" method="POST">
+                <div class="row">
+                    {% for i in n %}
+                    <div class="col">
+                        {{i}}
+                    </div>
+                    {% endfor %}
+                    <button class="btn btn-primary mb-3">Upvote</button>
+                </div>
+            </form>
+            {% endfor %}
+
+            <!-- {% for n in data %}
                 <table class="table">
                     <thead>
                     </thead>
@@ -42,7 +81,7 @@
                         <td>{{ i }}</td>
                         {% endfor %}
                     </tbody>
-            {% endfor %}
+            {% endfor %} -->
         </div>
     {% endif %}
 {% endif %}
