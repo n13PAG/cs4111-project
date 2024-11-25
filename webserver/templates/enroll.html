@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+{% include 'stu_navbar.html' %}
+
+{% if error %}
+<div class="alert alert-warning" role="alert">{{ error }}</div>
+{% endif %}
+<div class="container">
+    <h2>Enroll</h2>
+    <h4>Add Courses you are enrolled in</h4>
+    <form action="/enroll" method="POST">
+        {{ form.hidden_tag() }}
+        <div class="mb-3">
+            {{ form.course_name.label(class="form-label") }}
+            {{ form.course_name(class="form-control") }}
+        </div>            
+        <br/>
+        {{ form.enroll_btn(class="btn btn-primary") }}
+    </form>
+</div>
+
+
+{% endblock %}

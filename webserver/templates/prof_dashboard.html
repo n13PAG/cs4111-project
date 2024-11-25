@@ -2,27 +2,31 @@
 
 {% block content %}
 
-<h1>Professor Dashboard</h1>
-<form action="/prof_dashboard" method="POST">
-    {{ form.hidden_tag() }}
-    <div class="mb-3">
-        {{ form.cid.label(class="form-label") }}
-        {{ form.cid(class="form-control") }}
+{% include 'prof_navbar.html' %}
+
+<div class="container">
+    <div>
+        <h3>My Courses</h3>
+        {% if courses %}
+            <div class="col">
+                <div class="row">
+                    <div class="col">CID</div>
+                    <div class="col">Name</div>
+                    <div class="col">Class Size</div>
+                    <div class="col">Semester</div>
+                    <div class="col">Year</div>
+                </div>
+                {% for course in courses %}
+                <div class="row">
+                    {% for col in course %}
+                    <div class = "col">{{ col }}</div>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
     </div>
-    <div class="mb-3">
-        {{ form.course_name.label(class="form-label") }}
-        {{ form.course_name(class="form-control") }}
-    </div>    
-    <div class="mb-3">
-        {{ form.semester.label(class="form-label") }}
-        {{ form.semester(class="form-control") }}
-    </div>    
-    <div class="mb-3">
-        {{ form.year.label(class="form-label") }}
-        {{ form.year(class="form-control") }}
-    </div>   
-    <br/>
-    {{ form.submit(class="btn btn-primary") }}
-</form>
+
+{% endif %}
 
 {% endblock %}

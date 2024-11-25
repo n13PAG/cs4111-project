@@ -62,6 +62,7 @@ class SelectCourseForm(FlaskForm):
 
 
 class UploadForm(FlaskForm):
+    course_name = SelectField("Course Name", [validators.DataRequired()])
     file_link = StringField("PDF link", [validators.DataRequired()])
     category_name = SelectField("Category Name", [validators.DataRequired()])
     submit = SubmitField("Upload")

@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+{% include 'stu_navbar.html' %}
+
+<h2>Search Notes</h2>
+<h3>Select Course</h3>
+<form action="/search" method="POST">
+    {{ form.hidden_tag() }}
+    <div class="mb-3">
+        {{ form.course_name.label(class="form-label") }}
+        {{ form.course_name(class="form-control") }}
+    </div>
+    <br />
+    {{ form.submit(class="btn btn-primary") }}
+</form>
+</div>
+
+{% if data %}
+<div class="container">
+    <h3>Results</h3>
+    <div class="container">
+        {% for row in data %}
+        <div class="card">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">Link</th>
+                        <th scope="col">Category Name</th>
+                        <th scope="col">Upvotes</th>
+                        <th scope="col">Upload Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+
+                        <td scope="row" id="{{row[0]}}">{{ row[1] }}</td>
+                        <td scope="row" id="{{row[0]}}">{{ row[2] }}</td>
+                        <td scope="row" id="{{row[0]}}">{{ row[3] }}</td>
+                        <td scope="row" id="{{row[0]}}">{{ row[4] }}</td>
+                        <td scope="row" id="{{row[0]}}">
+                            {% set note_id = row[0] %}
+                            <a class="btn btn-primary" role="button" id={{row[0]}}
+                                href="/like_post/{{note_id}}">Like</a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            {% endfor %}
+        </div>
+
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

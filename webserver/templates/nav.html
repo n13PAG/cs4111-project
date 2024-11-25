@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+{% include 'dashboard_navbar.html' %}
+
+<form action="/nav" method="POST">
+    {{ form.hidden_tag() }}
+       
+    <div class="mb-3">
+        {{ form.uni.label(class="form-label") }}
+        {{ form.uni(class="form-control") }}
+    </div>
+    <br/>
+    {{ form.submit(class="btn btn-primary") }}
+</form>
+
+{% endblock %}

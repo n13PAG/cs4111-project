@@ -5,8 +5,8 @@
 {% include 'prof_navbar.html' %}
 
 <div class="container">
-    <h2>Add Course</h2>
-    <form action="/addcourse" method="POST">
+    <h2>Add Category For Course</h2>
+    <form action="/addcategory" method="POST">
         {{ form.hidden_tag() }}
         <div class="mb-3">
             {{ form.cid.label(class="form-label") }}
@@ -17,12 +17,12 @@
             {{ form.course_name(class="form-control") }}
         </div>    
         <div class="mb-3">
-            {{ form.semester.label(class="form-label") }}
-            {{ form.semester(class="form-control") }}
+            {{ form.category_name.label(class="form-label") }}
+            {{ form.category_name(class="form-control") }}
         </div>    
         <div class="mb-3">
-            {{ form.year.label(class="form-label") }}
-            {{ form.year(class="form-control") }}
+            {{ form.category_description.label(class="form-label") }}
+            {{ form.category_description(class="form-control") }}
         </div>   
         <br/>
         {{ form.submit(class="btn btn-primary") }}
