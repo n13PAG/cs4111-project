@@ -19,11 +19,12 @@ Read about it online.
 import os
 from sqlalchemy import *
 from sqlalchemy.pool import NullPool
-from flask import Flask, request, render_template, g, redirect, Response, url_for, flash
+from flask import Flask, request, render_template, g, redirect, Response, url_for, flash, jsonify
 from flask import session
 from sqlalchemy import text
 from datetime import datetime
 from flask_login import UserMixin, LoginManager, current_user, login_user, logout_user, login_required
+from flask_cors import CORS
 from webforms import UserLoginForm
 from webforms import SignUpForm
 from webforms import UploadForm
@@ -44,6 +45,7 @@ import helper_functions as ext
 tmpl_dir = os.path.join(os.path.dirname(
     os.path.abspath(__file__)), "templates")
 app = Flask(__name__, template_folder=tmpl_dir)
+CORS(app)
 
 # XXX: The Database URI should be in the format of:
 #
@@ -150,6 +152,10 @@ def teardown_request(exception):
 def index():
     return redirect(url_for("home"))
 
+
+@app.route('/api/data', methods=['GET'])
+def get_data():
+    return jsonify({"message": "Hello from Flask!"})
 
 @app.route("/home")
 def home():
