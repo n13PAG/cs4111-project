@@ -157,6 +157,16 @@ def index():
 def get_data():
     return jsonify({"message": "Hello from Flask!"})
 
+@app.route('/test', methods=['GET'])
+def get_test():
+    return jsonify({"message": "Check"})
+
+@app.route('/testCourses', methods=['GET'])
+def get_courses_test():
+    set_handlers(g.conn, metaData)
+    course_names = course_handler.get_all_course_names()
+    return jsonify({"courses":course_names})
+
 @app.route("/home")
 def home():
     return render_template("home.html")
