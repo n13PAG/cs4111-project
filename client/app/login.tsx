@@ -1,26 +1,80 @@
-import {View, Text, StyleSheet, Button } from 'react-native';
-import React from 'react';
-import {SafeAreaView, SafeAreaProvider} from 'react-native-safe-area-context';
-import { TextInput } from 'react-native-gesture-handler';
+import { Text, View, TextInput, Alert } from "react-native"
+import { useForm, Controller } from "react-hook-form"
+import * as React from 'react';
+import {
+  createStaticNavigation,
+  useNavigation,
+} from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { Button } from '@react-navigation/elements';
+//authentication flow: in server.py, there is an login object with user data, checks for user page access, user logn, page access-check
+//route real quick, 
 
-export default function LoginScreen() {
-    const [email, onChangeEmail] = React.useState('example@email.com')
-    const [password, onPasswordChange] = React.useState('')
+export default function App() {
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
+    defaultValues: {
+      EmailAddress: "",
+      UNI: "",
+    },
+  })
+  const onSubmit = (data:any) => console.log(data)
+
+
+    const navigation = useNavigation();
+  
     
-    return (
-        <SafeAreaProvider>
-            <SafeAreaView>
-                <TextInput 
-                    onChangeText={onChangeEmail}
-                    value={email}
-                />
-                <TextInput 
-                    secureTextEntry={true}
-                    onChangeText={onPasswordChange}
-                    value={password}
-                />
-            </SafeAreaView>
-        </SafeAreaProvider>
+  
 
-    )
+  return (
+    <View>
+      <Controller //this allows hooks to ctrl
+        control={control}
+        rules={{
+          required: true,
+          //may need to add email validation here?
+        }}
+        render={({ field: { onChange, onBlur, value } }) => (
+          <TextInput
+            placeholder="Email Address"
+            onBlur={onBlur}
+            onChangeText={onChange}
+            value={value}
+          />
+        )}
+        name="EmailAddress"
+      />
+      {errors.EmailAddress && <Text>This is required.</Text>}
+
+
+      <Controller
+        control={control}
+        rules={{
+          maxLength: 100,
+          required:true,
+        }}
+        render={({ field: { onChange, onBlur, value } }) => (
+          <TextInput
+            placeholder="UNI"
+            onBlur={onBlur}
+            onChangeText={onChange}
+            value={value}
+          />
+        )}
+        name="UNI"
+      />
+      {errors.UNI && <Text>This is required.</Text>}
+      
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <Button onPress={() => navigation.navigate('signup')}>
+            Login
+        </Button>
+      </View>
+
+      
+    </View>
+  )
 }
