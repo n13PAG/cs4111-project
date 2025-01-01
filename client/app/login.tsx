@@ -18,7 +18,7 @@ export default function App() {
   } = useForm({
     defaultValues: {
       EmailAddress: "",
-      UNI: "",
+      Password: "",
     },
   })
   const onSubmit = (data:any) => console.log(data)
@@ -58,15 +58,15 @@ export default function App() {
         }}
         render={({ field: { onChange, onBlur, value } }) => (
           <TextInput
-            placeholder="UNI"
+            placeholder="Password"
             onBlur={onBlur}
             onChangeText={onChange}
             value={value}
           />
         )}
-        name="UNI"
+        name="Password"
       />
-      {errors.UNI && <Text>This is required.</Text>}
+      {errors.Password && <Text>This is required.</Text>}
       
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
         <Button onPress={() => navigation.navigate('signup')}>

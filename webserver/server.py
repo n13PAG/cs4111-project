@@ -17,6 +17,7 @@ Read about it online.
 """
 
 import os
+import json
 from sqlalchemy import *
 from sqlalchemy.pool import NullPool
 from flask import Flask, request, render_template, g, redirect, Response, url_for, flash, jsonify
@@ -156,6 +157,44 @@ def index():
 @app.route('/api/data', methods=['GET'])
 def get_data():
     return jsonify({"message": "Hello from Flask!"})
+
+@app.route('/register_request', methods=['POST'])
+def register_user():
+    set_handlers(g.conn, metaData)
+
+    data = request.get_json()
+
+    next_id = ext.get_next_id(g.conn, "users", "uid")
+    u_sid = ext.get_next_id(g.conn, "users", "sid")
+    u_pid = None
+    u_uni = 'zy5566'
+    u_name = data['username']
+    u_email = data["email"]
+
+    user_table = metaData.tables['users']
+    query = insert(user_table).values(
+        uid=next_id,
+        sid=u_sid,
+        pid=u_pid,
+        uni=u_uni,
+        email=u_email,
+        name=u_name,
+    )
+
+    # user_handler.add_user(True, u_uni, u_email, u_name)
+
+    result = g.conn.execute(query)
+    g.conn.commit()
+
+    # print(data["email"])
+    # print(data["jdata"])
+    # print(json.dumps(data))
+    # pdata = json.loads(data)
+    # print(pdata)
+    # print(data['username'])
+    # return jsonify({"result": "success"})
+    return data
+
 
 @app.route('/test', methods=['GET'])
 def get_test():

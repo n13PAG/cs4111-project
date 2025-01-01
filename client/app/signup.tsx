@@ -5,6 +5,8 @@ import {SafeAreaView, SafeAreaProvider} from 'react-native-safe-area-context';
 import { yupResolver } from "@hookform/resolvers/yup"
 import * as yup from "yup"
 import { Component } from "react";
+import { useSession } from './ctx';
+import { router } from 'expo-router';
 
 class HttpExample extends Component {
     state = {
@@ -65,29 +67,46 @@ export default function SignupScreen() {
             password: '',
         }
     })
+    
+
 
     const onPressSend = (formData:any) => {
         console.log(formData.username)
         console.log(formData.email)
         console.log(formData.password)
 
-        fetch('http://127.0.0.1:8111/login_request', {
-            method: 'GET'
-        })
-        .then((response) => response.json())
-        .then((responseJson) => {
-            console.log(responseJson)
-            this.setState({
-                data: responseJson
+        const jdata = {username: formData.username, email: formData.email, passsword: formData.passsword}
+
+        const requestOptions = 
+        {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json'},
+            body: JSON.stringify({username: formData.username, email: formData.email, passsword: formData.passsword})
+        }
+
+        fetch('http://127.0.0.1:8111/register_request', requestOptions)
+            .then(response => {
+                response.json()
+                .then(data => {
+                    console.log('return')
+                    console.log(data)
+                })
             })
-        })
-        .catch((error) => {
-            console.error(error)
-        })
     };
+
+    const { signIn } = useSession();
 
     return (
         <View>
+            <Text
+        onPress={() => {
+          signIn();
+          // Navigate after signing in. You may want to tweak this to ensure sign-in is
+          // successful before navigating.
+          router.replace('/');
+        }}>
+        Sign In
+      </Text>
             <Text>Create an account</Text>
             <Controller
                 control={control}
