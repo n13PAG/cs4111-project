@@ -26,6 +26,7 @@ from sqlalchemy import text
 from datetime import datetime
 from flask_login import UserMixin, LoginManager, current_user, login_user, logout_user, login_required
 from flask_cors import CORS
+from werkzeug.security import generate_password_hash, check_password_hash
 from webforms import UserLoginForm
 from webforms import SignUpForm
 from webforms import UploadForm
@@ -167,24 +168,49 @@ def register_user():
     next_id = ext.get_next_id(g.conn, "users", "uid")
     u_sid = ext.get_next_id(g.conn, "users", "sid")
     u_pid = None
-    u_uni = 'zy5566'
+    u_uni = 'zy5567'
     u_name = data['username']
     u_email = data["email"]
 
     user_table = metaData.tables['users']
-    query = insert(user_table).values(
-        uid=next_id,
-        sid=u_sid,
-        pid=u_pid,
-        uni=u_uni,
-        email=u_email,
-        name=u_name,
-    )
 
-    # user_handler.add_user(True, u_uni, u_email, u_name)
 
-    result = g.conn.execute(query)
-    g.conn.commit()
+    # Check if user with the uni entered exists
+    check_query = user_table.select().where(user_table.c.uni == u_uni)
+    check_result = g.conn.execute(check_query)
+
+    if check_result.rowcount > 0:
+        error = "User already exists."
+        return jsonify({"result": error})
+    
+
+    # Check if user with the same email exists
+    check_query = user_table.select().where(user_table.c.email == u_email)
+    check_result = g.conn.execute(check_query)
+
+    if check_result.rowcount > 0:
+        error = "User already exists."
+        return jsonify({"result": error})
+    
+
+    password = generate_password_hash(data['password'], method='scrypt')
+    p_match = False
+    if (check_password_hash(password, data['password'])):
+        p_match = True
+
+    # query = insert(user_table).values(
+    #     uid=next_id,
+    #     sid=u_sid,
+    #     pid=u_pid,
+    #     uni=u_uni,
+    #     email=u_email,
+    #     name=u_name,
+    # )
+
+    # # user_handler.add_user(True, u_uni, u_email, u_name)
+
+    # result = g.conn.execute(query)
+    # g.conn.commit()
 
     # print(data["email"])
     # print(data["jdata"])
@@ -193,7 +219,7 @@ def register_user():
     # print(pdata)
     # print(data['username'])
     # return jsonify({"result": "success"})
-    return data
+    return jsonify({'password': data['password'], 'hashed': password, 'match': p_match})
 
 
 @app.route('/test', methods=['GET'])

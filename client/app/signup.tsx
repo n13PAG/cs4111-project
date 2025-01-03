@@ -81,7 +81,7 @@ export default function SignupScreen() {
         {
             method: 'POST',
             headers: { 'Content-Type': 'application/json'},
-            body: JSON.stringify({username: formData.username, email: formData.email, passsword: formData.passsword})
+            body: JSON.stringify({username: formData.username, email: formData.email, password: formData.password})
         }
 
         fetch('http://127.0.0.1:8111/register_request', requestOptions)
